@@ -167,13 +167,6 @@ export class NearbyPersonsAndGroups extends LitElement {
               ${person.firstName} ${person.lastName}
             </p>
           </div>
-          ${person.pronouns
-            ? html`
-                <p class="${textColors.tertiary} text-xs">
-                  ${person.pronouns}
-                </p>
-              `
-            : ''}
         </div>
 
         <!-- Distance Badge -->

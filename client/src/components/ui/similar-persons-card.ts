@@ -184,13 +184,6 @@ export class SimilarPersonsCard extends LitElement {
           <p class="${textColors.primary} font-medium truncate text-sm">
             ${person.firstName} ${person.lastName}
           </p>
-          ${person.pronouns
-            ? html`
-                <p class="${textColors.tertiary} text-xs">
-                  ${person.pronouns}
-                </p>
-              `
-            : ''}
         </div>
 
         <!-- Similarity Score -->
