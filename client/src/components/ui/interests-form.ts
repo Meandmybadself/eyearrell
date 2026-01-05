@@ -44,12 +44,6 @@ export class InterestsForm extends LitElement {
   @state()
   private isSaving = false;
 
-  @state()
-  private selectedCategory: string = '';
-
-  @state()
-  private categories: string[] = [];
-
   async connectedCallback() {
     super.connectedCallback();
     await this.loadData();
@@ -62,8 +56,6 @@ export class InterestsForm extends LitElement {
       const interestsResponse = await this.api.getInterests(undefined, { limit: 1000 });
       if (interestsResponse.success && interestsResponse.data) {
         this.allInterests = interestsResponse.data;
-        // Extract unique categories
-        this.categories = [...new Set(this.allInterests.map(i => i.category))].sort();
       }
 
       // Load person's interests
@@ -86,13 +78,6 @@ export class InterestsForm extends LitElement {
     } finally {
       this.isLoading = false;
     }
-  }
-
-  private getFilteredInterests(): Interest[] {
-    if (!this.selectedCategory) {
-      return this.allInterests;
-    }
-    return this.allInterests.filter(i => i.category === this.selectedCategory);
   }
 
   private getInterestLevel(interestId: number): number {
@@ -176,8 +161,6 @@ export class InterestsForm extends LitElement {
       `;
     }
 
-    const filteredInterests = this.getFilteredInterests();
-
     return html`
       <div class="space-y-4">
         <div class="flex items-center justify-between">
@@ -195,29 +178,10 @@ export class InterestsForm extends LitElement {
           </button>
         </div>
 
-        <div>
-          <label for="category-filter" class="block text-sm font-medium ${textColors.primary} mb-2">
-            Filter by Category
-          </label>
-          <select
-            id="category-filter"
-            .value=${this.selectedCategory}
-            @change=${(e: Event) => {
-              this.selectedCategory = (e.target as HTMLSelectElement).value;
-            }}
-            class="block w-full rounded-md ${backgroundColors.content} px-3 py-1.5 text-sm ${textColors.primary} outline-1 -outline-offset-1 ${backgroundColors.border} focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600"
-          >
-            <option value="">All Categories</option>
-            ${this.categories.map(cat => html`
-              <option value="${cat}">${cat.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</option>
-            `)}
-          </select>
-        </div>
-
         <div class="space-y-3 max-h-96 overflow-y-auto ${backgroundColors.content} p-4 rounded-lg border ${backgroundColors.border}">
-          ${filteredInterests.length === 0
+          ${this.allInterests.length === 0
             ? html`<p class="text-sm ${textColors.tertiary}">No interests found</p>`
-            : filteredInterests.map(interest => {
+            : this.allInterests.map(interest => {
                 const level = this.getInterestLevel(interest.id);
                 return html`
                   <div class="flex items-center justify-between py-2 border-b ${backgroundColors.border} last:border-b-0">

@@ -204,13 +204,11 @@ enum PrivacyLevel {
 model Interest {
   id        Int              @id @default(autoincrement())
   name      String
-  category  String
   createdAt DateTime         @default(now())
   updatedAt DateTime         @updatedAt
   deleted   Boolean          @default(false)
   personInterests PersonInterest[]
 
-  @@index([category])
   @@index([deleted])
   @@map("interests")
 }

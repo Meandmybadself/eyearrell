@@ -18,7 +18,6 @@ export class AdminNav extends LitElement {
 
   private navItems: AdminNavItem[] = [
     { path: '/admin/system', label: 'System' },
-    { path: '/admin/categories', label: 'Categories' },
     { path: '/admin/users', label: 'Users' },
     { path: '/admin/logs', label: 'Audit Logs' },
   ];

@@ -142,7 +142,6 @@ export interface PersonGroup {
 export interface Interest {
   id: number;
   name: string;
-  category: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -335,12 +334,10 @@ export interface UpdatePersonGroupRequest {
 
 export interface CreateInterestRequest {
   name: string;
-  category: string;
 }
 
 export interface UpdateInterestRequest {
   name?: string;
-  category?: string;
 }
 
 export interface PersonInterestItem {

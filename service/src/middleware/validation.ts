@@ -289,8 +289,7 @@ export const validateSearchQuery = async (req: Request, res: Response, next: Nex
 
 // Interest schemas
 export const interestSchema = z.object({
-  name: z.string().min(1, 'Interest name is required'),
-  category: z.string().min(1, 'Category is required')
+  name: z.string().min(1, 'Interest name is required')
 });
 
 export const personInterestItemSchema = z.object({

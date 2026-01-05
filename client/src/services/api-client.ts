@@ -652,23 +652,6 @@ export class ApiClient {
     });
   }
 
-  async getInterestCategories(): Promise<ApiResponse<string[]>> {
-    return this.request<ApiResponse<string[]>>('/interests/categories');
-  }
-
-  async renameInterestCategory(oldName: string, newName: string): Promise<ApiResponse<null>> {
-    return this.request<ApiResponse<null>>(`/interests/categories/${encodeURIComponent(oldName)}`, {
-      method: 'PUT',
-      body: JSON.stringify({ newName })
-    });
-  }
-
-  async deleteInterestCategory(name: string): Promise<ApiResponse<null>> {
-    return this.request<ApiResponse<null>>(`/interests/categories/${encodeURIComponent(name)}`, {
-      method: 'DELETE'
-    });
-  }
-
   // Person Interests endpoints
   async getPersonInterests(displayId: string): Promise<ApiResponse<(PersonInterest & { interest?: Interest })[]>> {
     return this.request<ApiResponse<(PersonInterest & { interest?: Interest })[]>>(`/persons/${displayId}/interests`);
