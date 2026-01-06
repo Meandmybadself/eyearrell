@@ -35,6 +35,33 @@ const randomInt = (min: number, max: number): number =>
 // Helper to generate a random decimal between 0 and 1
 const randomLevel = (): number => Math.random();
 
+// Helper to generate a random phone number
+const generatePhoneNumber = (): string => {
+  const areaCodes = ['212', '312', '415', '617', '202', '305', '404', '512', '602', '713'];
+  const areaCode = randomElement(areaCodes);
+  const exchange = randomInt(200, 999);
+  const line = randomInt(1000, 9999);
+  return `(${areaCode}) ${exchange}-${line}`;
+};
+
+// Helper to generate a random personal email
+const generatePersonalEmail = (firstName: string, lastName: string): string => {
+  const domains = ['gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com', 'icloud.com'];
+  const separators = ['.', '_', ''];
+  const addNumbers = Math.random() > 0.5;
+
+  const separator = randomElement(separators);
+  const domain = randomElement(domains);
+  const number = addNumbers ? randomInt(1, 999) : '';
+
+  return `${firstName.toLowerCase()}${separator}${lastName.toLowerCase()}${number}@${domain}`;
+};
+
+// Helper to generate random privacy level (80% public, 20% private)
+const randomPrivacy = (): 'PUBLIC' | 'PRIVATE' => {
+  return Math.random() > 0.2 ? 'PUBLIC' : 'PRIVATE';
+};
+
 // Helper to create a URL-safe displayId
 const createDisplayId = (firstName: string, lastName: string, counter: number): string => {
   const base = `${firstName.toLowerCase()}-${lastName.toLowerCase()}`;
@@ -165,8 +192,53 @@ export const seedTestUsers = async () => {
         });
       }
 
+      // Create contact information (80% chance of having contact info)
+      const contactInfoCount = [];
+      if (Math.random() > 0.2) {
+        // Add phone number (70% chance)
+        if (Math.random() > 0.3) {
+          const phoneContact = await prisma.contactInformation.create({
+            data: {
+              type: 'PHONE',
+              label: randomElement(['Mobile', 'Cell', 'Personal']),
+              value: generatePhoneNumber(),
+              privacy: randomPrivacy()
+            }
+          });
+
+          await prisma.personContactInformation.create({
+            data: {
+              personId: person.id,
+              contactInformationId: phoneContact.id
+            }
+          });
+          contactInfoCount.push('phone');
+        }
+
+        // Add personal email (60% chance)
+        if (Math.random() > 0.4) {
+          const emailContact = await prisma.contactInformation.create({
+            data: {
+              type: 'EMAIL',
+              label: randomElement(['Personal', 'Home', 'Work']),
+              value: generatePersonalEmail(firstName, lastName),
+              privacy: randomPrivacy()
+            }
+          });
+
+          await prisma.personContactInformation.create({
+            data: {
+              personId: person.id,
+              contactInformationId: emailContact.id
+            }
+          });
+          contactInfoCount.push('email');
+        }
+      }
+
       created++;
-      console.log(`Created user ${email} with person ${displayId} and ${numberOfInterests} interests`);
+      const contactInfo = contactInfoCount.length > 0 ? ` with ${contactInfoCount.join(' & ')}` : '';
+      console.log(`Created user ${email} with person ${displayId}, ${numberOfInterests} interests${contactInfo}`);
     } catch (error) {
       errors++;
       console.error(`Error creating user ${i + 1}:`, error);
