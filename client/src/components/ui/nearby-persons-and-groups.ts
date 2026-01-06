@@ -138,7 +138,7 @@ export class NearbyPersonsAndGroups extends LitElement {
     return html`
       <div
         @click=${() => this.handlePersonClick(person.displayId)}
-        class="flex items-center gap-4 p-4 rounded-lg ${backgroundColors.content} ${backgroundColors.contentHover} cursor-pointer transition-colors"
+        class="flex items-center gap-3 p-3 rounded-lg ${backgroundColors.content} ${backgroundColors.contentHover} cursor-pointer transition-colors"
       >
         <!-- Avatar -->
         <div class="flex-shrink-0">
@@ -147,12 +147,12 @@ export class NearbyPersonsAndGroups extends LitElement {
                 <img
                   src="${person.imageURL}"
                   alt="${person.firstName} ${person.lastName}"
-                  class="h-12 w-12 rounded-full object-cover"
+                  class="h-10 w-10 rounded-full object-cover"
                 />
               `
             : html`
-                <div class="h-12 w-12 rounded-full bg-indigo-600 flex items-center justify-center">
-                  <span class="text-lg font-medium text-white">
+                <div class="h-10 w-10 rounded-full bg-indigo-600 flex items-center justify-center">
+                  <span class="text-base font-medium text-white">
                     ${this.getInitials(person)}
                   </span>
                 </div>
@@ -186,12 +186,12 @@ export class NearbyPersonsAndGroups extends LitElement {
     return html`
       <div
         @click=${() => this.handleGroupClick(group.displayId)}
-        class="flex items-center gap-4 p-4 rounded-lg ${backgroundColors.content} ${backgroundColors.contentHover} cursor-pointer transition-colors"
+        class="flex items-center gap-3 p-3 rounded-lg ${backgroundColors.content} ${backgroundColors.contentHover} cursor-pointer transition-colors"
       >
         <!-- Icon -->
         <div class="flex-shrink-0">
-          <div class="h-12 w-12 rounded-full bg-green-600 flex items-center justify-center">
-            ${renderIcon('Users', 'w-6 h-6 text-white')}
+          <div class="h-10 w-10 rounded-full bg-green-600 flex items-center justify-center">
+            ${renderIcon('Users', 'w-5 h-5 text-white')}
           </div>
         </div>
 
@@ -240,11 +240,11 @@ export class NearbyPersonsAndGroups extends LitElement {
 
   render() {
     return html`
-      <div class="${backgroundColors.content} rounded-lg shadow-sm p-6">
+      <div class="${backgroundColors.content} rounded-lg shadow-sm p-5">
         <h2 class="${textStyles.heading.h3} mb-1">
           Nearby People & Groups
         </h2>
-        <p class="${textColors.tertiary} text-sm mb-4">
+        <p class="${textColors.tertiary} text-sm mb-3">
           Within 3 miles
         </p>
 

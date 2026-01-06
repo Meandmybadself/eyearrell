@@ -158,7 +158,7 @@ export class SimilarPersonsCard extends LitElement {
     return html`
       <div
         @click=${() => this.handlePersonClick(person.displayId)}
-        class="flex items-center gap-4 p-4 rounded-lg ${backgroundColors.content} ${backgroundColors.contentHover} cursor-pointer transition-colors"
+        class="flex items-center gap-3 p-3 rounded-lg ${backgroundColors.content} ${backgroundColors.contentHover} cursor-pointer transition-colors"
       >
         <!-- Avatar -->
         <div class="flex-shrink-0">
@@ -167,12 +167,12 @@ export class SimilarPersonsCard extends LitElement {
                 <img
                   src="${person.imageURL}"
                   alt="${person.firstName} ${person.lastName}"
-                  class="h-12 w-12 rounded-full object-cover"
+                  class="h-10 w-10 rounded-full object-cover"
                 />
               `
             : html`
-                <div class="h-12 w-12 rounded-full bg-indigo-600 flex items-center justify-center">
-                  <span class="text-lg font-medium text-white">
+                <div class="h-10 w-10 rounded-full bg-indigo-600 flex items-center justify-center">
+                  <span class="text-base font-medium text-white">
                     ${this.getInitials(person)}
                   </span>
                 </div>
@@ -219,8 +219,8 @@ export class SimilarPersonsCard extends LitElement {
 
   render() {
     return html`
-      <div class="${backgroundColors.content} rounded-lg shadow-sm p-6">
-        <h2 class="${textStyles.heading.h3} mb-4">
+      <div class="${backgroundColors.content} rounded-lg shadow-sm p-5">
+        <h2 class="${textStyles.heading.h3} mb-3">
           People With Interests in Common
         </h2>
 
