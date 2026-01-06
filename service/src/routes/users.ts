@@ -452,11 +452,11 @@ router.get('/:id', requireSystemAdmin, validateIdParam, asyncHandler(async (req,
 // POST /api/users - Create new user
 router.post('/', validateBody(userSchema), asyncHandler(async (req, res) => {
   const { password, isSystemAdmin: requestedAdmin, ...userData } = req.body;
-  
+
   // Hash password
   const saltRounds = 12;
   const hashedPassword = await bcrypt.hash(password, saltRounds);
-  
+
   // Generate verification token
   const verificationToken = crypto.randomBytes(32).toString('hex');
 
@@ -464,6 +464,17 @@ router.post('/', validateBody(userSchema), asyncHandler(async (req, res) => {
   const userCount = await prisma.user.count({ where: { deleted: false } });
   const isSystemAdmin = userCount === 0 ? true : Boolean(requestedAdmin);
   const isFirstUser = userCount === 0;
+
+  // Check if registration is allowed (always allow first user for bootstrapping)
+  if (!isFirstUser) {
+    const system = await prisma.system.findFirst({
+      where: { id: 1, deleted: false }
+    });
+
+    if (system && !system.registrationOpen) {
+      throw createError(403, 'Registration is currently closed');
+    }
+  }
 
   const item = await prisma.user.create({
     data: {
