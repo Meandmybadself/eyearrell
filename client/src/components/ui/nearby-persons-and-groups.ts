@@ -50,7 +50,7 @@ export class NearbyPersonsAndGroups extends LitElement {
     this.hasNoLocations = false;
 
     try {
-      const response = await this.api.getNearby(1); // 1 mile radius
+      const response = await this.api.getNearby(3); // 3 mile radius
 
       if (response.success && response.data) {
         this.nearbyPersons = response.data.persons;
@@ -116,7 +116,7 @@ export class NearbyPersonsAndGroups extends LitElement {
     return html`
       <div class="text-center py-8">
         <p class="${textStyles.body.small}">
-          No nearby people or groups within 1 mile.
+          No nearby people or groups within 3 miles.
         </p>
       </div>
     `;
@@ -245,7 +245,7 @@ export class NearbyPersonsAndGroups extends LitElement {
           Nearby People & Groups
         </h2>
         <p class="${textColors.tertiary} text-sm mb-4">
-          Within 1 mile
+          Within 3 miles
         </p>
 
         ${this.isLoading

@@ -33,7 +33,7 @@ const formatGroupWithDistance = (group: any, distance: number): GroupWithDistanc
 
 // GET /api/nearby - Find nearby persons and groups
 router.get('/', requireAuth, asyncHandler(async (req, res) => {
-  const radius = parseFloat(req.query.radius as string) || 1; // Default 1 mile
+  const radius = parseFloat(req.query.radius as string) || 3; // Default 3 miles
   const user = req.user!;
   const currentPersonId = req.session.currentPersonId;
 
