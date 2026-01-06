@@ -1,5 +1,6 @@
 import { prisma } from '../lib/prisma.js';
 import bcrypt from 'bcrypt';
+import { updatePersonInterestVector } from './vector-helpers.js';
 
 // First names pool
 const firstNames = [
@@ -191,6 +192,9 @@ export const seedTestUsers = async () => {
           }
         });
       }
+
+      // Update interest vector for similarity searches
+      await updatePersonInterestVector(person.id);
 
       // Create contact information (80% chance of having contact info)
       const contactInfoCount = [];
