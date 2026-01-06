@@ -55,7 +55,11 @@ export class SimilarPersonsCard extends LitElement {
       const response = await this.api.getRecommendations(this.currentPerson.displayId, this.limit);
 
       if (response.success && response.data) {
-        this.recommendations = response.data;
+        // Filter to only show people with over 25% similarity
+        this.recommendations = response.data.filter((person: PersonWithSimilarity) => {
+          const similarity = person.similarity || 0;
+          return similarity > 0.25;
+        });
       } else {
         this.error = response.error || 'Failed to load recommendations';
       }
@@ -134,7 +138,7 @@ export class SimilarPersonsCard extends LitElement {
     return html`
       <div class="text-center py-8">
         <p class="${textStyles.body.small}">
-          No similar people found at this time.
+          No people found with over 25% similarity at this time.
         </p>
       </div>
     `;
