@@ -19,6 +19,7 @@ import './pages/persons-page.js';
 import './pages/group-form-page.js';
 import './pages/group-detail-page.js';
 import './pages/groups-page.js';
+import './pages/achievements-page.js';
 
 export interface RouteConfig {
   path: string;
@@ -257,6 +258,19 @@ export const createRoutes = (store: AppStore): RouteConfig[] => {
           return html`<login-page></login-page>`;
         }
         return html`<group-detail-page></group-detail-page>`;
+      }
+    },
+    {
+      path: '/achievements',
+      render: () => {
+        const state = store.getState();
+        const isAuthenticated = selectIsAuthenticated(state);
+
+        if (!isAuthenticated) {
+          store.dispatch(setAttemptedPath('/achievements'));
+          return html`<login-page></login-page>`;
+        }
+        return html`<achievements-page></achievements-page>`;
       }
     },
     {

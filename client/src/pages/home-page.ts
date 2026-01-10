@@ -8,11 +8,12 @@ import { addNotification } from '../store/slices/ui.js';
 import { backgroundColors } from '../utilities/text-colors.js';
 import type { AppStore } from '../store/index.js';
 import type { ApiClient } from '../services/api-client.js';
-import type { Person, Group, ContactInformation } from '@irl/shared';
+import type { Person, Group, ContactInformation, UserStats } from '@irl/shared';
 import '../components/layout/app-layout.js';
 import '../components/ui/unified-search-list.js';
 import '../components/ui/similar-persons-card.js';
 import '../components/ui/nearby-persons-and-groups.js';
+import '../components/ui/user-stats-widget.js';
 
 @customElement('home-page')
 export class HomePage extends LitElement {
@@ -47,10 +48,34 @@ export class HomePage extends LitElement {
   @state()
   private currentPerson: Person | null = null;
 
+  @state()
+  private userStats: UserStats | null = null;
+
+  @state()
+  private statsLoading = false;
+
   async connectedCallback() {
     super.connectedCallback();
     this.currentPerson = selectCurrentPerson(this.store.getState());
-    await this.loadData();
+    await Promise.all([
+      this.loadData(),
+      this.loadStats()
+    ]);
+  }
+
+  private async loadStats() {
+    this.statsLoading = true;
+    try {
+      const response = await this.api.getUserStats();
+      if (response.success && response.data) {
+        this.userStats = response.data;
+      }
+    } catch (error) {
+      // Silently fail for stats
+      console.error('Failed to load user stats:', error);
+    } finally {
+      this.statsLoading = false;
+    }
   }
 
   private async loadData() {
@@ -122,12 +147,15 @@ export class HomePage extends LitElement {
       <app-layout>
         ${this.currentPerson && !this.isLoading
           ? html`
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+              <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
                 <div>
                   <similar-persons-card .currentPerson=${this.currentPerson} .limit=${5}></similar-persons-card>
                 </div>
                 <div>
                   <nearby-persons-and-groups .currentPerson=${this.currentPerson}></nearby-persons-and-groups>
+                </div>
+                <div>
+                  <user-stats-widget .stats=${this.userStats} .loading=${this.statsLoading}></user-stats-widget>
                 </div>
               </div>
             `
