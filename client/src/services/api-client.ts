@@ -39,7 +39,10 @@ import type {
   PersonInterest,
   SetPersonInterestsRequest,
   AuditLog,
-  NearbyResponse
+  NearbyResponse,
+  AchievementWithCompletion,
+  UserStats,
+  Level
 } from '@irl/shared';
 
 export interface PaginationParams {
@@ -707,6 +710,26 @@ export class ApiClient {
   // Nearby endpoints
   async getNearby(radius: number = 1): Promise<ApiResponse<NearbyResponse>> {
     return this.request<ApiResponse<NearbyResponse>>(`/nearby?radius=${radius}`);
+  }
+
+  // Gamification endpoints
+  async getAchievements(): Promise<ApiResponse<AchievementWithCompletion[]>> {
+    return this.request<ApiResponse<AchievementWithCompletion[]>>('/gamification/achievements');
+  }
+
+  async getUserStats(): Promise<ApiResponse<UserStats>> {
+    return this.request<ApiResponse<UserStats>>('/gamification/stats');
+  }
+
+  async getLevels(): Promise<ApiResponse<Level[]>> {
+    return this.request<ApiResponse<Level[]>>('/gamification/levels');
+  }
+
+  async checkAchievements(achievementKeys: string[]): Promise<ApiResponse<{ awarded: string[] }>> {
+    return this.request<ApiResponse<{ awarded: string[] }>>('/gamification/achievements/check', {
+      method: 'POST',
+      body: JSON.stringify({ achievementKeys })
+    });
   }
 }
 
