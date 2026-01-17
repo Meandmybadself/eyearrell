@@ -14,6 +14,7 @@ import '../components/ui/unified-search-list.js';
 import '../components/ui/similar-persons-card.js';
 import '../components/ui/nearby-persons-and-groups.js';
 import '../components/ui/user-stats-widget.js';
+import '../components/ui/invite-user-card.js';
 
 @customElement('home-page')
 export class HomePage extends LitElement {
@@ -147,7 +148,7 @@ export class HomePage extends LitElement {
       <app-layout>
         ${this.currentPerson && !this.isLoading
           ? html`
-              <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
+              <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
                 <div>
                   <similar-persons-card .currentPerson=${this.currentPerson} .limit=${5}></similar-persons-card>
                 </div>
@@ -156,6 +157,9 @@ export class HomePage extends LitElement {
                 </div>
                 <div>
                   <user-stats-widget .stats=${this.userStats} .loading=${this.statsLoading}></user-stats-widget>
+                </div>
+                <div>
+                  <invite-user-card></invite-user-card>
                 </div>
               </div>
             `
