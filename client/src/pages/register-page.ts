@@ -28,6 +28,19 @@ export class RegisterPage extends LitElement {
   @state()
   private emailError = '';
 
+  connectedCallback() {
+    super.connectedCallback();
+
+    // Check for email in URL query parameter (from invitation)
+    const params = new URLSearchParams(window.location.search);
+    const emailParam = params.get('email');
+
+    // Only pre-fill if it's a valid email format
+    if (emailParam && !validateEmail(emailParam)) {
+      this.email = emailParam;
+    }
+  }
+
   @state()
   private passwordError = '';
 

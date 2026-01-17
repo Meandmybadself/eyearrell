@@ -79,3 +79,47 @@ export const sendVerificationEmail = async (email: string, token: string, type: 
   const response = await client.email.send(params)
   return response
 }
+
+export const buildInvitationLink = (email: string) => {
+  const url = new URL('/register', resolveVerificationBaseUrl())
+  url.searchParams.set('email', email)
+  return url.toString()
+}
+
+export const sendInvitationEmail = async (email: string) => {
+  const client = getMailerSendClient()
+  const fromAddress = resolveFromAddress()
+
+  if (!client || !fromAddress) {
+    if (process.env.NODE_ENV !== 'test') {
+      console.warn('MailerSend not configured - skipping invitation email dispatch.')
+    }
+    return
+  }
+
+  const invitationLink = buildInvitationLink(email)
+  const sender = new Sender(fromAddress, resolveFromName())
+  const recipients = [new Recipient(email)]
+
+  const params = new EmailParams()
+    .setFrom(sender)
+    .setTo(recipients)
+    .setSubject("You're invited to join IRL!")
+    .setText([
+      'Hi there!',
+      "You've been invited to join our community directory.",
+      'Click the link below to create your account and get started.',
+      `Registration link: ${invitationLink}`,
+      'Looking forward to seeing you in the community!'
+    ].join('\n\n'))
+    .setHtml(`
+      <p>Hi there!</p>
+      <p>You've been invited to join our community directory.</p>
+      <p>Click the link below to create your account and get started.</p>
+      <p><a href="${invitationLink}">Create your account</a></p>
+      <p>Looking forward to seeing you in the community!</p>
+    `)
+
+  const response = await client.email.send(params)
+  return response
+}
