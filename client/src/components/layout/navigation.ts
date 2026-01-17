@@ -6,6 +6,7 @@ import { logout, switchPerson } from '../../store/slices/auth.js';
 import { selectCurrentPerson, selectCurrentUser, selectIsAuthenticated, selectIsSystemAdmin, selectAllUserPersons } from '../../store/selectors.js';
 import type { AppStore } from '../../store/index.js';
 import { ROUTES } from '../../constants.js';
+import '../ui/nav-progress-bar.js';
 
 @customElement('app-navigation')
 export class AppNavigation extends LitElement {
@@ -192,6 +193,8 @@ export class AppNavigation extends LitElement {
               ? html`
                   <div class="hidden sm:ml-6 sm:block">
                     <div class="flex items-center">
+                      <!-- Progress Bar -->
+                      <nav-progress-bar></nav-progress-bar>
                       <!-- Profile dropdown -->
                       <div class="relative ml-3">
                         <button
@@ -251,7 +254,9 @@ export class AppNavigation extends LitElement {
                       </div>
                     </div>
                   </div>
-                  <div class="-mr-2 flex sm:hidden">
+                  <div class="-mr-2 flex items-center gap-3 sm:hidden">
+                    <!-- Progress Bar (Mobile) -->
+                    <nav-progress-bar></nav-progress-bar>
                     <!-- Mobile menu button -->
                     <button
                       @click=${this.toggleMobileMenu}
