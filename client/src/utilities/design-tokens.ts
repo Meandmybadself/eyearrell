@@ -175,13 +175,13 @@ export const pageStyles = {
   container: 'min-h-screen bg-gray-50 dark:bg-gray-950 px-4 sm:px-6 lg:px-8 py-6',
 
   // Centered content container
-  content: 'max-w-7xl mx-auto',
+  content: 'w-full max-w-7xl mx-auto',
 
   // Wide content container (for admin pages with tables)
-  contentWide: 'max-w-6xl mx-auto',
+  contentWide: 'w-full max-w-6xl mx-auto',
 
   // Narrower content container (for forms, detail pages)
-  contentNarrow: 'max-w-4xl mx-auto',
+  contentNarrow: 'w-full max-w-4xl mx-auto',
 
   // Centered content (for login, etc.)
   centered: 'min-h-screen flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8',
