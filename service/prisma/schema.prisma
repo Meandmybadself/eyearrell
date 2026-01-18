@@ -40,6 +40,8 @@ model User {
   people             Person[]
   emailChangeRequests EmailChangeRequest[]
   auditLogs          AuditLog[]
+  userAchievements   UserAchievement[]
+  pointTransactions  PointTransaction[]
 
   @@map("users")
 }
@@ -244,4 +246,81 @@ model AuditLog {
   @@index([createdAt])
   @@index([method])
   @@map("audit_logs")
+}
+
+// Gamification System Models
+
+model Achievement {
+  id          Int      @id @default(autoincrement())
+  key         String   @unique // e.g., "profile_complete", "first_private_address"
+  name        String   // Display name
+  description String   // What the achievement is for
+  points      Int      // Points awarded
+  category    AchievementCategory
+  iconName    String?  // Icon identifier for UI
+  sortOrder   Int      @default(0) // Display order in UI
+  isActive    Boolean  @default(true) // Can disable achievements
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  userAchievements UserAchievement[]
+
+  @@index([category])
+  @@index([isActive])
+  @@map("achievements")
+}
+
+model UserAchievement {
+  id            Int      @id @default(autoincrement())
+  userId        Int
+  achievementId Int
+  completedAt   DateTime @default(now()) // Timestamp when earned
+  createdAt     DateTime @default(now())
+
+  user          User        @relation(fields: [userId], references: [id])
+  achievement   Achievement @relation(fields: [achievementId], references: [id])
+
+  @@unique([userId, achievementId]) // Can only earn once
+  @@index([userId])
+  @@index([achievementId])
+  @@index([completedAt]) // For leaderboards
+  @@map("user_achievements")
+}
+
+model Level {
+  id              Int      @id @default(autoincrement())
+  levelNumber     Int      @unique // 1, 2, 3, etc.
+  name            String   // e.g., "Newcomer", "Community Member", "Active Participant"
+  pointsRequired  Int      // Minimum points to reach this level
+  description     String?  // What this level means
+  iconName        String?  // Icon for this level
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([pointsRequired])
+  @@map("levels")
+}
+
+model PointTransaction {
+  id            Int      @id @default(autoincrement())
+  userId        Int
+  achievementId Int?     // Null for manual adjustments
+  points        Int      // Can be negative for deductions
+  reason        String   // Why points were awarded/deducted
+  createdAt     DateTime @default(now())
+
+  user          User     @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([createdAt])
+  @@map("point_transactions")
+}
+
+enum AchievementCategory {
+  ONBOARDING
+  PROFILE
+  DISCOVERY
+  SOCIAL
+  PRIVACY
+  ENGAGEMENT
 }

@@ -391,3 +391,77 @@ export interface NearbyResponse {
   groups: GroupWithDistance[];
   referencePointsCount: number; // Number of locations used as reference
 }
+
+// Gamification types
+export const AchievementCategory = {
+  ONBOARDING: 'ONBOARDING',
+  PROFILE: 'PROFILE',
+  DISCOVERY: 'DISCOVERY',
+  SOCIAL: 'SOCIAL',
+  PRIVACY: 'PRIVACY',
+  ENGAGEMENT: 'ENGAGEMENT'
+} as const;
+
+export type AchievementCategory = typeof AchievementCategory[keyof typeof AchievementCategory];
+
+export interface Achievement {
+  id: number;
+  key: string;
+  name: string;
+  description: string;
+  points: number;
+  category: AchievementCategory;
+  iconName: string | null;
+  sortOrder: number;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface UserAchievement {
+  id: number;
+  userId: number;
+  achievementId: number;
+  completedAt: string;
+  createdAt: string;
+}
+
+export interface Level {
+  id: number;
+  levelNumber: number;
+  name: string;
+  pointsRequired: number;
+  description: string | null;
+  iconName: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PointTransaction {
+  id: number;
+  userId: number;
+  achievementId: number | null;
+  points: number;
+  reason: string;
+  createdAt: string;
+}
+
+// Extended types for gamification API responses
+export interface AchievementWithCompletion extends Achievement {
+  completed: boolean;
+  completedAt?: string;
+}
+
+export interface UserAchievementWithRelations extends UserAchievement {
+  user?: User;
+  achievement?: Achievement;
+}
+
+export interface UserStats {
+  totalPoints: number;
+  currentLevel: Level | null;
+  nextLevel: Level | null;
+  progressPercent: number;
+  achievementCount: number;
+  completedAchievementCount: number;
+}
