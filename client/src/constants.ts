@@ -14,6 +14,7 @@ export const ROUTES = {
   PERSONS_CREATE: '/persons/create',
   GROUPS: '/groups',
   GROUPS_CREATE: '/groups/create',
+  INVITE: '/invite',
   ADMIN_SYSTEM: '/admin/system',
   ADMIN_USERS: '/admin/users',
   ACHIEVEMENTS: '/achievements',

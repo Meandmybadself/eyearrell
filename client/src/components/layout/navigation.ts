@@ -171,6 +171,15 @@ export class AppNavigation extends LitElement {
                         >
                           Groups
                         </a>
+                        <a
+                          href=${ROUTES.INVITE}
+                          @click=${this.createClickHandler()}
+                          class="rounded-md px-3 py-2 text-sm font-medium ${currentPath === ROUTES.INVITE
+                            ? 'bg-gray-900 text-white'
+                            : 'text-gray-300 hover:bg-white/5 hover:text-white'} no-underline"
+                        >
+                          Invite
+                        </a>
                         ${this.isSystemAdmin
                           ? html`
                               <a
@@ -311,6 +320,15 @@ export class AppNavigation extends LitElement {
                       : 'text-gray-300 hover:bg-white/5 hover:text-white'} no-underline"
                   >
                     Groups
+                  </a>
+                  <a
+                    href=${ROUTES.INVITE}
+                    @click=${this.createClickHandler()}
+                    class="block rounded-md px-3 py-2 text-base font-medium ${currentPath === ROUTES.INVITE
+                      ? 'bg-gray-900 text-white'
+                      : 'text-gray-300 hover:bg-white/5 hover:text-white'} no-underline"
+                  >
+                    Invite
                   </a>
                   ${this.isSystemAdmin
                     ? html`

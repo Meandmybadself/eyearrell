@@ -4,7 +4,7 @@ import { consume } from '@lit-labs/context';
 import { storeContext } from '../contexts/store-context.js';
 import { apiContext } from '../contexts/api-context.js';
 import { addNotification } from '../store/slices/ui.js';
-import { textColors, backgroundColors } from '../utilities/text-colors.js';
+import { textColors, backgroundColors, pageStyles } from '../utilities/design-tokens.js';
 import type { AppStore } from '../store/index.js';
 import type { ApiClient } from '../services/api-client.js';
 import type { ContactInformation, Group } from '@irl/shared';
@@ -56,10 +56,10 @@ export class GroupsPage extends LitElement {
     this.isLoading = true;
     this.groupContacts = new Map();
     try {
-      const response = await this.api.getGroups(
-        this.currentPage,
-        this.limit
-      );
+      const response = await this.api.getGroups({
+        page: this.currentPage,
+        limit: this.limit
+      });
 
       if (response.success && response.data) {
         this.groups = response.data;
@@ -202,8 +202,8 @@ export class GroupsPage extends LitElement {
     const hasGroups = this.groups.length > 0;
 
     return html`
-      <div class="flex min-h-full flex-col py-6 pt-16">
-        <div class="px-4 sm:px-6 lg:px-8">
+      <div class="${pageStyles.container}">
+        <div class="${pageStyles.content}">
           <div class="sm:flex sm:items-center">
             <div class="sm:flex-auto">
               <h1 class="text-base font-semibold ${textColors.primary}">Groups</h1>

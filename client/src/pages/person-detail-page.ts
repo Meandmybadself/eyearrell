@@ -7,7 +7,7 @@ import { addNotification } from '../store/slices/ui.js';
 import { selectCurrentUser, selectCurrentPerson } from '../store/selectors.js';
 import '../components/ui/contact-info-display.js';
 import '../components/ui/group-list.js';
-import { backgroundColors, textColors } from '../utilities/text-colors.js';
+import { backgroundColors, textColors, pageStyles, contentStateStyles } from '../utilities/design-tokens.js';
 import type { AppStore } from '../store/index.js';
 import type { ApiClient } from '../services/api-client.js';
 import type { Person, ContactInformation, PersonGroupWithRelations, Group } from '@irl/shared';
@@ -183,7 +183,7 @@ export class PersonDetailPage extends LitElement {
   render() {
     if (this.isLoading) {
       return html`
-        <div class="flex min-h-full items-center justify-center py-6 pt-16">
+        <div class="${contentStateStyles.containerFullHeight}">
           <div class="inline-block w-8 h-8 border-4 border-indigo-600 border-r-transparent rounded-full animate-spin"></div>
         </div>
       `;
@@ -191,15 +191,15 @@ export class PersonDetailPage extends LitElement {
 
     if (!this.person) {
       return html`
-        <div class="flex min-h-full items-center justify-center py-6 pt-16">
-          <p class="${textColors.tertiary}">Person not found</p>
+        <div class="${contentStateStyles.containerFullHeight}">
+          <p class="${contentStateStyles.emptyText}">Person not found</p>
         </div>
       `;
     }
 
     return html`
-      <div class="flex min-h-full flex-col py-6 sm:px-6 lg:px-8 pt-16">
-        <div class="sm:mx-auto sm:w-full sm:max-w-4xl">
+      <div class="${pageStyles.container}">
+        <div class="${pageStyles.content}">
           <!-- Breadcrumb -->
           <nav class="flex mb-4" aria-label="Breadcrumb">
             <ol class="flex items-center space-x-2">

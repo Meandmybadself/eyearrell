@@ -1,10 +1,13 @@
 import { html, TemplateResult } from 'lit';
-import { customElement, property } from 'lit/decorators.js';
+import { customElement, property, state } from 'lit/decorators.js';
+import { consume } from '@lit-labs/context';
 import type { Person, Group, ContactInformation } from '@irl/shared';
 import { ContactType, PrivacyLevel } from '@irl/shared';
 import { textStyles, backgroundColors, textColors } from '../../utilities/text-colors.js';
 import { BaseList, SortableColumn } from './base-list.js';
 import { renderIcon } from '../../utilities/icons.js';
+import { apiContext } from '../../contexts/api-context.js';
+import type { ApiClient } from '../../services/api-client.js';
 
 // Union type for items that can be either Person or Group
 type SearchItem =
@@ -33,6 +36,32 @@ export class UnifiedSearchList extends BaseList<SearchItem> {
 
   @property({ type: Boolean })
   showGroups = true;
+
+  @consume({ context: apiContext })
+  @state()
+  private api!: ApiClient;
+
+  // Cache original data for restoring when search is cleared
+  @state()
+  private originalPersons: Person[] = [];
+
+  @state()
+  private originalGroups: Group[] = [];
+
+  @state()
+  private originalShowPersons = true;
+
+  @state()
+  private originalShowGroups = true;
+
+  @state()
+  private hasActiveSearch = false;
+
+  constructor() {
+    super();
+    // Enable async search for this component
+    this.asyncSearchEnabled = true;
+  }
 
   // Combine persons and groups into unified items array
   get items(): SearchItem[] {
@@ -123,6 +152,111 @@ export class UnifiedSearchList extends BaseList<SearchItem> {
 
   protected getEmptyStateMessage(): string {
     return 'No people or groups found.';
+  }
+
+  /**
+   * Perform async search via API
+   * Searches both persons and groups, auto-enables filters based on results
+   */
+  protected async performAsyncSearch(query: string, signal: AbortSignal): Promise<void> {
+    // If query is empty, restore original data
+    if (!query.trim()) {
+      if (this.hasActiveSearch) {
+        this.persons = this.originalPersons;
+        this.groups = this.originalGroups;
+        this.showPersons = this.originalShowPersons;
+        this.showGroups = this.originalShowGroups;
+        this.hasActiveSearch = false;
+      }
+      return;
+    }
+
+    // Save original data on first search
+    if (!this.hasActiveSearch) {
+      this.originalPersons = this.persons;
+      this.originalGroups = this.groups;
+      this.originalShowPersons = this.showPersons;
+      this.originalShowGroups = this.showGroups;
+      this.hasActiveSearch = true;
+    }
+
+    try {
+      // Search both persons and groups in parallel
+      const [personsResponse, groupsResponse] = await Promise.all([
+        this.api.getPersons({ page: 1, limit: 50, search: query }, signal),
+        this.api.getGroups({ page: 1, limit: 50, search: query }, signal)
+      ]);
+
+      // Update persons array with search results
+      if (personsResponse.success && personsResponse.data) {
+        this.persons = personsResponse.data;
+
+        // Load contact information for search results
+        const personContactPromises = this.persons.map(async (person) => {
+          try {
+            const contactsResponse = await this.api.getPersonContactInformations(person.displayId);
+            if (contactsResponse.success && contactsResponse.data) {
+              this.personContacts.set(person.id, contactsResponse.data);
+            }
+          } catch (error) {
+            // Silently fail for individual contact fetches
+            console.error(`Failed to load contacts for person ${person.displayId}:`, error);
+          }
+        });
+
+        await Promise.all(personContactPromises);
+      } else {
+        this.persons = [];
+      }
+
+      // Update groups array with search results
+      if (groupsResponse.success && groupsResponse.data) {
+        this.groups = groupsResponse.data;
+
+        // Load contact information for search results
+        const groupContactPromises = this.groups.map(async (group) => {
+          try {
+            const contactsResponse = await this.api.getGroupContactInformations(group.displayId);
+            if (contactsResponse.success && contactsResponse.data) {
+              this.groupContacts.set(group.id, contactsResponse.data);
+            }
+          } catch (error) {
+            // Silently fail for individual contact fetches
+            console.error(`Failed to load contacts for group ${group.displayId}:`, error);
+          }
+        });
+
+        await Promise.all(groupContactPromises);
+      } else {
+        this.groups = [];
+      }
+
+      // Auto-enable filters based on what we found
+      const hasPersonResults = this.persons.length > 0;
+      const hasGroupResults = this.groups.length > 0;
+
+      if (hasPersonResults) {
+        this.showPersons = true;
+      }
+      if (hasGroupResults) {
+        this.showGroups = true;
+      }
+
+      // Trigger re-render with updated maps
+      this.requestUpdate();
+    } catch (error: any) {
+      // Ignore abort errors
+      if (error.name === 'AbortError') {
+        return;
+      }
+
+      console.error('Search failed:', error);
+      // On error, restore original data
+      this.persons = this.originalPersons;
+      this.groups = this.originalGroups;
+      this.showPersons = this.originalShowPersons;
+      this.showGroups = this.originalShowGroups;
+    }
   }
 
   private getVisiblePersonContacts(personId: number): ContactInformation[] {

@@ -6,6 +6,7 @@ import { login } from '../store/slices/auth.js';
 import { addNotification } from '../store/slices/ui.js';
 import { selectAttemptedPath, selectSystemName, selectSystemDescription, selectRegistrationOpen } from '../store/selectors.js';
 import { validateEmail } from '../utilities/validation.js';
+import { pageStyles } from '../utilities/design-tokens.js';
 import type { AppStore } from '../store/index.js';
 import '../components/ui/input.js';
 import '../components/ui/button.js';
@@ -98,8 +99,8 @@ export class LoginPage extends LitElement {
 
   render() {
     return html`
-      <div class="flex min-h-full flex-col justify-center py-6 sm:px-6 lg:px-8 pt-16">
-        <div class="mx-auto w-full max-w-6xl">
+      <div class="${pageStyles.container} flex flex-col justify-center">
+        <div class="${pageStyles.content}">
           <div class="flex flex-col md:flex-row md:gap-12 lg:gap-16 items-center md:items-center">
             <!-- Left Column: System Description -->
             <div class="w-full md:w-1/2 md:flex md:flex-col md:justify-center">

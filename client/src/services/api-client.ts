@@ -48,6 +48,7 @@ import type {
 export interface PaginationParams {
   page?: number;
   limit?: number;
+  search?: string;
 }
 
 export class ApiClient {
@@ -184,13 +185,14 @@ export class ApiClient {
   }
 
   // Person endpoints
-  async getPersons(params?: PaginationParams): Promise<PaginatedResponse<Person>> {
+  async getPersons(params?: PaginationParams, signal?: AbortSignal): Promise<PaginatedResponse<Person>> {
     const query = new URLSearchParams();
     if (params?.page) query.set('page', params.page.toString());
     if (params?.limit) query.set('limit', params.limit.toString());
+    if (params?.search) query.set('search', params.search);
     const queryString = query.toString() ? `?${query.toString()}` : '';
 
-    return this.request<PaginatedResponse<Person>>(`/persons${queryString}`);
+    return this.request<PaginatedResponse<Person>>(`/persons${queryString}`, { signal });
   }
 
   async getPerson(displayId: string): Promise<ApiResponse<Person>> {
@@ -253,14 +255,14 @@ export class ApiClient {
   }
 
   // Group endpoints
-  async getGroups(page?: number, limit?: number, search?: string): Promise<PaginatedResponse<Group>> {
+  async getGroups(params?: PaginationParams, signal?: AbortSignal): Promise<PaginatedResponse<Group>> {
     const query = new URLSearchParams();
-    if (page) query.set('page', page.toString());
-    if (limit) query.set('limit', limit.toString());
-    if (search) query.set('search', search);
+    if (params?.page) query.set('page', params.page.toString());
+    if (params?.limit) query.set('limit', params.limit.toString());
+    if (params?.search) query.set('search', params.search);
     const queryString = query.toString() ? `?${query.toString()}` : '';
 
-    return this.request<PaginatedResponse<Group>>(`/groups${queryString}`);
+    return this.request<PaginatedResponse<Group>>(`/groups${queryString}`, { signal });
   }
 
   async getGroup(displayId: string): Promise<ApiResponse<Group>> {

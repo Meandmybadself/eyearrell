@@ -40,6 +40,9 @@ export abstract class BaseList<T> extends LitElement {
   @property({ type: Boolean })
   isLoading = false;
 
+  /** Whether async search is enabled (opt-in for child classes) */
+  protected asyncSearchEnabled = false;
+
   /** Current search query */
   @state()
   private searchQuery = '';
@@ -54,6 +57,13 @@ export abstract class BaseList<T> extends LitElement {
 
   /** Debounce timer for search */
   private searchDebounceTimer: number | null = null;
+
+  /** AbortController for canceling in-flight search requests */
+  private searchAbortController: AbortController | null = null;
+
+  /** Whether search is currently in progress */
+  @state()
+  private isSearching = false;
 
   /**
    * Get the column configuration for this list
@@ -89,6 +99,15 @@ export abstract class BaseList<T> extends LitElement {
   }
 
   /**
+   * Perform async search (override in child classes to enable)
+   * @param _query - The search query string
+   * @param _signal - AbortSignal for canceling the request
+   */
+  protected async performAsyncSearch(_query: string, _signal: AbortSignal): Promise<void> {
+    // Default: no-op. Override in child classes to enable async search.
+  }
+
+  /**
    * Handle search input changes with debouncing
    */
   private handleSearchInput = (e: Event) => {
@@ -101,8 +120,33 @@ export abstract class BaseList<T> extends LitElement {
     }
 
     // Set new timer for debounced search
-    this.searchDebounceTimer = window.setTimeout(() => {
-      this.requestUpdate();
+    this.searchDebounceTimer = window.setTimeout(async () => {
+      if (this.asyncSearchEnabled) {
+        // Abort previous search request if exists
+        if (this.searchAbortController) {
+          this.searchAbortController.abort();
+        }
+
+        // Create new abort controller for this search
+        this.searchAbortController = new AbortController();
+        const signal = this.searchAbortController.signal;
+
+        this.isSearching = true;
+        try {
+          await this.performAsyncSearch(this.searchQuery, signal);
+        } catch (error: any) {
+          // Ignore abort errors (user cancelled)
+          if (error.name !== 'AbortError') {
+            console.error('Async search failed:', error);
+          }
+        } finally {
+          this.isSearching = false;
+          this.requestUpdate();
+        }
+      } else {
+        // Sync mode (original behavior)
+        this.requestUpdate();
+      }
     }, SEARCH_DEBOUNCE_MS);
   };
 
@@ -115,8 +159,28 @@ export abstract class BaseList<T> extends LitElement {
       clearTimeout(this.searchDebounceTimer);
       this.searchDebounceTimer = null;
     }
+    if (this.searchAbortController) {
+      this.searchAbortController.abort();
+      this.searchAbortController = null;
+    }
+    this.isSearching = false;
     this.requestUpdate();
   };
+
+  /**
+   * Cleanup on disconnect
+   */
+  disconnectedCallback() {
+    super.disconnectedCallback();
+    if (this.searchAbortController) {
+      this.searchAbortController.abort();
+      this.searchAbortController = null;
+    }
+    if (this.searchDebounceTimer !== null) {
+      clearTimeout(this.searchDebounceTimer);
+      this.searchDebounceTimer = null;
+    }
+  }
 
   /**
    * Handle column header click for sorting
@@ -195,7 +259,13 @@ export abstract class BaseList<T> extends LitElement {
             placeholder="Search..."
             class="w-full px-3 py-2 pl-10 pr-10 border ${backgroundColors.border} rounded-md ${textStyles.input} ${textStyles.placeholder} focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-opacity-50"
           />
-          ${this.searchQuery
+          ${this.isSearching
+            ? html`
+                <div class="absolute right-2 top-1/2 -translate-y-1/2">
+                  <div class="inline-block w-4 h-4 border-2 border-indigo-600 border-r-transparent rounded-full animate-spin"></div>
+                </div>
+              `
+            : this.searchQuery
             ? html`
                 <button
                   @click=${this.handleClearSearch}

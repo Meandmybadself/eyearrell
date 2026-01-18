@@ -4,6 +4,7 @@ import { consume } from '@lit-labs/context';
 import { storeContext } from '../../contexts/store-context.js';
 import { removeNotification } from '../../store/slices/ui.js';
 import { selectNotifications } from '../../store/selectors.js';
+import { notificationStyles } from '../../utilities/design-tokens.js';
 import type { AppStore } from '../../store/index.js';
 
 @customElement('ui-notifications')
@@ -22,6 +23,9 @@ export class UINotifications extends LitElement {
 
   private unsubscribe?: () => void;
 
+  /** Track auto-dismiss timers by notification ID to prevent memory leaks */
+  private dismissTimers = new Map<string, number>();
+
   connectedCallback() {
     super.connectedCallback();
     if (this.store) {
@@ -35,17 +39,37 @@ export class UINotifications extends LitElement {
   disconnectedCallback() {
     super.disconnectedCallback();
     this.unsubscribe?.();
+    // Clean up all timers on disconnect
+    for (const timerId of this.dismissTimers.values()) {
+      clearTimeout(timerId);
+    }
+    this.dismissTimers.clear();
   }
 
   private updateNotifications() {
-    this.notifications = selectNotifications(this.store.getState());
+    const newNotifications = selectNotifications(this.store.getState());
 
-    // Auto-dismiss after 5 seconds
-    this.notifications.forEach(notification => {
-      setTimeout(() => {
-        this.store.dispatch(removeNotification(notification.id));
-      }, 5000);
+    // Clear timers for notifications that no longer exist
+    const newIds = new Set(newNotifications.map(n => n.id));
+    for (const [id, timerId] of this.dismissTimers.entries()) {
+      if (!newIds.has(id)) {
+        clearTimeout(timerId);
+        this.dismissTimers.delete(id);
+      }
+    }
+
+    // Set timers only for new notifications (not already tracked)
+    newNotifications.forEach(notification => {
+      if (!this.dismissTimers.has(notification.id)) {
+        const timerId = window.setTimeout(() => {
+          this.store.dispatch(removeNotification(notification.id));
+          this.dismissTimers.delete(notification.id);
+        }, 5000);
+        this.dismissTimers.set(notification.id, timerId);
+      }
     });
+
+    this.notifications = newNotifications;
   }
 
   private handleClose(id: string) {
@@ -53,15 +77,8 @@ export class UINotifications extends LitElement {
   }
 
   private getNotificationClasses(type: string) {
-    const baseClasses = 'mb-3 p-4 rounded-lg shadow-lg flex items-start justify-between gap-3 animate-slide-in';
-
-    const typeClasses = {
-      success: 'bg-green-100 text-green-800',
-      error: 'bg-red-100 text-red-800',
-      info: 'bg-blue-100 text-blue-800'
-    };
-
-    return `${baseClasses} ${typeClasses[type as keyof typeof typeClasses] || typeClasses.info}`;
+    const variant = notificationStyles.variants[type as keyof typeof notificationStyles.variants] || notificationStyles.variants.info;
+    return `${notificationStyles.base} ${variant}`;
   }
 
   render() {

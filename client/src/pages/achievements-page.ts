@@ -7,10 +7,11 @@ import { addNotification } from '../store/slices/ui.js';
 import type { AppStore } from '../store/index.js';
 import type { ApiClient } from '../services/api-client.js';
 import type { AchievementWithCompletion, UserStats } from '@irl/shared';
-import { renderIcon } from '../utilities/icons.js';
+import { textColors, filterButtonStyles, cardStyles, pageStyles, contentStateStyles, spinnerStyles } from '../utilities/design-tokens.js';
 
 import '../components/ui/achievement-card.js';
 import '../components/ui/level-progress.js';
+import '../components/ui/ui-spinner.js';
 
 @customElement('achievements-page')
 export class AchievementsPage extends LitElement {
@@ -93,59 +94,52 @@ export class AchievementsPage extends LitElement {
   }
 
   render() {
-    if (this.isLoading) {
-      return html`
-        <div class="min-h-screen bg-gray-50 py-8">
-          <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="text-center py-12">
-              ${renderIcon('spinner')} Loading achievements...
-            </div>
-          </div>
-        </div>
-      `;
-    }
-
     const filteredAchievements = this.getFilteredAchievements();
     const categories = this.getCategories();
     const completedCount = this.achievements.filter(a => a.completed).length;
     const totalCount = this.achievements.length;
 
+    if (this.isLoading) {
+      return html`
+        <div class="${pageStyles.container}">
+          <div class="${contentStateStyles.containerFullHeight}">
+            <div class="${spinnerStyles.base} ${spinnerStyles.sizes.xl} ${spinnerStyles.colors.primary}"></div>
+          </div>
+        </div>
+      `;
+    }
+
     return html`
-      <div class="min-h-screen bg-gray-50 py-8">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="${pageStyles.container}">
+        <div class="${pageStyles.content}">
           <!-- Page Header -->
-          <div class="mb-8">
-            <h1 class="text-3xl font-bold text-gray-900 mb-2">
-              ${renderIcon('trophy')} Achievements
-            </h1>
-            <p class="text-gray-600">
-              Track your progress and earn rewards as you explore the community.
-              ${completedCount} of ${totalCount} completed.
+          <div class="${pageStyles.header}">
+            <h1 class="${pageStyles.title}">Achievements</h1>
+            <p class="${pageStyles.description}">
+              Track your progress and earn rewards as you explore the community. ${completedCount} of ${totalCount} completed.
             </p>
           </div>
 
           <!-- Level Progress Section -->
-          ${this.stats ? html`
-            <div class="mb-8">
-              <level-progress
-                .currentLevel=${this.stats.currentLevel}
-                .nextLevel=${this.stats.nextLevel}
-                .totalPoints=${this.stats.totalPoints}
-                .progressPercent=${this.stats.progressPercent}
-              ></level-progress>
-            </div>
-          ` : ''}
+          ${this.stats
+            ? html`
+                <div class="mb-8">
+                  <level-progress
+                    .currentLevel=${this.stats.currentLevel}
+                    .nextLevel=${this.stats.nextLevel}
+                    .totalPoints=${this.stats.totalPoints}
+                    .progressPercent=${this.stats.progressPercent}
+                  ></level-progress>
+                </div>
+              `
+            : ''}
 
           <!-- Category Filter -->
           <div class="mb-6">
             <div class="flex flex-wrap gap-2">
               <button
                 @click=${() => this.handleCategoryFilter(null)}
-                class="px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  this.selectedCategory === null
-                    ? 'bg-purple-600 text-white'
-                    : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
-                }"
+                class="${filterButtonStyles.base} ${this.selectedCategory === null ? filterButtonStyles.active : filterButtonStyles.inactive}"
               >
                 All (${totalCount})
               </button>
@@ -154,11 +148,7 @@ export class AchievementsPage extends LitElement {
                 return html`
                   <button
                     @click=${() => this.handleCategoryFilter(category)}
-                    class="px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                      this.selectedCategory === category
-                        ? 'bg-purple-600 text-white'
-                        : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
-                    }"
+                    class="${filterButtonStyles.base} ${this.selectedCategory === category ? filterButtonStyles.active : filterButtonStyles.inactive}"
                   >
                     ${category} (${stats.completed}/${stats.total})
                   </button>
@@ -169,16 +159,20 @@ export class AchievementsPage extends LitElement {
 
           <!-- Achievements Grid -->
           <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            ${filteredAchievements.map(achievement => html`
-              <achievement-card .achievement=${achievement}></achievement-card>
-            `)}
+            ${filteredAchievements.map(
+              achievement => html`
+                <achievement-card .achievement=${achievement}></achievement-card>
+              `
+            )}
           </div>
 
-          ${filteredAchievements.length === 0 ? html`
-            <div class="text-center py-12 bg-white rounded-lg border border-gray-200">
-              <p class="text-gray-500">No achievements found in this category.</p>
-            </div>
-          ` : ''}
+          ${filteredAchievements.length === 0
+            ? html`
+                <div class="text-center py-12 ${cardStyles.base} ${cardStyles.padding.md}">
+                  <p class="${textColors.tertiary}">No achievements found in this category.</p>
+                </div>
+              `
+            : ''}
         </div>
       </div>
     `;

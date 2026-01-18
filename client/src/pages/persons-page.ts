@@ -4,7 +4,7 @@ import { consume } from '@lit-labs/context';
 import { storeContext } from '../contexts/store-context.js';
 import { apiContext } from '../contexts/api-context.js';
 import { addNotification } from '../store/slices/ui.js';
-import { textColors, backgroundColors } from '../utilities/text-colors.js';
+import { textColors, backgroundColors, pageStyles } from '../utilities/design-tokens.js';
 
 import '../components/ui/person-list.js';
 import '../components/ui/bulk-import-modal.js';
@@ -199,8 +199,8 @@ export class PersonsPage extends LitElement {
     const hasPersons = this.persons.length > 0;
 
     return html`
-      <div class="flex min-h-full flex-col py-6 pt-16">
-        <div class="px-4 sm:px-6 lg:px-8">
+      <div class="${pageStyles.container}">
+        <div class="${pageStyles.content}">
           <div class="sm:flex sm:items-center">
             <div class="sm:flex-auto">
               <h1 class="text-base font-semibold ${textColors.primary}">People</h1>

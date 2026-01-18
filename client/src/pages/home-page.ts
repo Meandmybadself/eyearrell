@@ -6,15 +6,14 @@ import { apiContext } from '../contexts/api-context.js';
 import { selectCurrentUser, selectCurrentPerson } from '../store/selectors.js';
 import { addNotification } from '../store/slices/ui.js';
 import { backgroundColors } from '../utilities/text-colors.js';
+import { pageStyles } from '../utilities/design-tokens.js';
 import type { AppStore } from '../store/index.js';
 import type { ApiClient } from '../services/api-client.js';
 import type { Person, Group, ContactInformation, UserStats } from '@irl/shared';
-import '../components/layout/app-layout.js';
 import '../components/ui/unified-search-list.js';
 import '../components/ui/similar-persons-card.js';
 import '../components/ui/nearby-persons-and-groups.js';
 import '../components/ui/user-stats-widget.js';
-import '../components/ui/invite-user-card.js';
 
 @customElement('home-page')
 export class HomePage extends LitElement {
@@ -85,7 +84,7 @@ export class HomePage extends LitElement {
       // Load persons and groups in parallel
       const [personsResponse, groupsResponse] = await Promise.all([
         this.api.getPersons({ limit: 100 }),
-        this.api.getGroups(1, 100)
+        this.api.getGroups({ page: 1, limit: 100 })
       ]);
 
       if (personsResponse.success && personsResponse.data) {
@@ -145,44 +144,43 @@ export class HomePage extends LitElement {
     const canViewPrivateContacts = currentUser?.isSystemAdmin || false;
 
     return html`
-      <app-layout>
-        ${this.currentPerson && !this.isLoading
-          ? html`
-              <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
-                <div>
-                  <similar-persons-card .currentPerson=${this.currentPerson} .limit=${5}></similar-persons-card>
-                </div>
-                <div>
-                  <nearby-persons-and-groups .currentPerson=${this.currentPerson}></nearby-persons-and-groups>
-                </div>
-                <div>
-                  <user-stats-widget .stats=${this.userStats} .loading=${this.statsLoading}></user-stats-widget>
-                </div>
-                <div>
-                  <invite-user-card></invite-user-card>
-                </div>
-              </div>
-            `
-          : ''}
-
-        <div class="${backgroundColors.content} rounded-lg shadow-sm p-6">
-          ${this.isLoading
+      <div class="${pageStyles.container}">
+        <div class="${pageStyles.content}">
+          ${this.currentPerson && !this.isLoading
             ? html`
-                <div class="flex items-center justify-center py-12">
-                  <div class="inline-block w-8 h-8 border-4 border-indigo-600 border-r-transparent rounded-full animate-spin"></div>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
+                  <div>
+                    <similar-persons-card .currentPerson=${this.currentPerson} .limit=${5}></similar-persons-card>
+                  </div>
+                  <div>
+                    <nearby-persons-and-groups .currentPerson=${this.currentPerson}></nearby-persons-and-groups>
+                  </div>
+                  <div>
+                    <user-stats-widget .stats=${this.userStats} .loading=${this.statsLoading}></user-stats-widget>
+                  </div>
                 </div>
               `
-            : html`
-                <unified-search-list
-                  .persons=${this.persons}
-                  .groups=${this.groups}
-                  .personContacts=${this.personContacts}
-                  .groupContacts=${this.groupContacts}
-                  .showPrivateContacts=${canViewPrivateContacts}
-                ></unified-search-list>
-              `}
+            : ''}
+
+          <div class="${backgroundColors.content} rounded-lg shadow-sm p-6">
+            ${this.isLoading
+              ? html`
+                  <div class="flex items-center justify-center py-12">
+                    <div class="inline-block w-8 h-8 border-4 border-indigo-600 border-r-transparent rounded-full animate-spin"></div>
+                  </div>
+                `
+              : html`
+                  <unified-search-list
+                    .persons=${this.persons}
+                    .groups=${this.groups}
+                    .personContacts=${this.personContacts}
+                    .groupContacts=${this.groupContacts}
+                    .showPrivateContacts=${canViewPrivateContacts}
+                  ></unified-search-list>
+                `}
+          </div>
         </div>
-      </app-layout>
+      </div>
     `;
   }
 }

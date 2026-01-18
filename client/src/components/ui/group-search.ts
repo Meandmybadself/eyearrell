@@ -45,7 +45,7 @@ export class GroupSearch extends LitElement {
 
     this.isSearching = true;
     try {
-      const response = await this.api.getGroups(1, 10, query);
+      const response = await this.api.getGroups({ page: 1, limit: 10, search: query });
       if (response.success && response.data) {
         // Filter out the current group if we're editing
         this.searchResults = this.excludeGroupId

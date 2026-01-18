@@ -5,6 +5,7 @@ import { storeContext } from '../contexts/store-context.js';
 import { addNotification } from '../store/slices/ui.js';
 import { validateEmail } from '../utilities/validation.js';
 import { apiClient } from '../services/api-client.js';
+import { pageStyles, contentStateStyles } from '../utilities/design-tokens.js';
 import type { AppStore } from '../store/index.js';
 import type { User } from '@irl/shared';
 import '../components/ui/input.js';
@@ -213,7 +214,7 @@ export class ProfilePage extends LitElement {
   render() {
     if (this.isLoading) {
       return html`
-        <div class="flex justify-center items-center min-h-screen">
+        <div class="${contentStateStyles.containerFullHeight}">
           <div class="inline-block w-8 h-8 border-4 border-indigo-600 border-r-transparent rounded-full animate-spin"></div>
         </div>
       `;
@@ -221,14 +222,15 @@ export class ProfilePage extends LitElement {
 
     if (!this.profile) {
       return html`
-        <div class="flex justify-center items-center min-h-screen">
-          <p class="text-gray-500">Profile not found</p>
+        <div class="${contentStateStyles.containerFullHeight}">
+          <p class="${contentStateStyles.emptyText}">Profile not found</p>
         </div>
       `;
     }
 
     return html`
-      <div class="container mx-auto px-4 py-8 max-w-4xl">
+      <div class="${pageStyles.container}">
+        <div class="${pageStyles.content}">
         <div class="mb-8">
           <h1 class="text-3xl font-bold text-gray-900 dark:text-white">Profile Settings</h1>
           <p class="mt-2 text-sm text-gray-600 dark:text-gray-400">
@@ -383,6 +385,7 @@ export class ProfilePage extends LitElement {
               </button>
             </div>
           </form>
+        </div>
         </div>
       </div>
     `;

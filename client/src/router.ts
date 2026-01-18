@@ -20,6 +20,7 @@ import './pages/group-form-page.js';
 import './pages/group-detail-page.js';
 import './pages/groups-page.js';
 import './pages/achievements-page.js';
+import './pages/invite-page.js';
 
 export interface RouteConfig {
   path: string;
@@ -258,6 +259,19 @@ export const createRoutes = (store: AppStore): RouteConfig[] => {
           return html`<login-page></login-page>`;
         }
         return html`<group-detail-page></group-detail-page>`;
+      }
+    },
+    {
+      path: '/invite',
+      render: () => {
+        const state = store.getState();
+        const isAuthenticated = selectIsAuthenticated(state);
+
+        if (!isAuthenticated) {
+          store.dispatch(setAttemptedPath('/invite'));
+          return html`<login-page></login-page>`;
+        }
+        return html`<invite-page></invite-page>`;
       }
     },
     {

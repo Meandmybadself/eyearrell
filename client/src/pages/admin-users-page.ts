@@ -5,7 +5,7 @@ import { storeContext } from '../contexts/store-context.js';
 import { apiContext } from '../contexts/api-context.js';
 import { addNotification } from '../store/slices/ui.js';
 import { selectCurrentUser } from '../store/selectors.js';
-import { textColors, backgroundColors } from '../utilities/text-colors.js';
+import { textColors, backgroundColors, pageStyles, contentStateStyles } from '../utilities/design-tokens.js';
 import type { AppStore } from '../store/index.js';
 import type { ApiClient } from '../services/api-client.js';
 import type { UserWithMetadata } from '@irl/shared';
@@ -471,15 +471,15 @@ export class AdminUsersPage extends LitElement {
   render() {
     if (this.isLoading) {
       return html`
-        <div class="flex min-h-full items-center justify-center py-6 pt-16">
+        <div class="${contentStateStyles.containerFullHeight}">
           <div class="inline-block w-8 h-8 border-4 border-indigo-600 border-r-transparent rounded-full animate-spin"></div>
         </div>
       `;
     }
 
     return html`
-      <div class="flex min-h-full flex-col py-6 sm:px-6 lg:px-8 pt-16">
-        <div class="sm:mx-auto sm:w-full sm:max-w-6xl">
+      <div class="${pageStyles.container}">
+        <div class="${pageStyles.content}">
           <admin-nav currentPath="/admin/users"></admin-nav>
 
           <div class="${backgroundColors.content} px-6 py-8 shadow-sm sm:rounded-lg sm:px-12">

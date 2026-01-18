@@ -1,6 +1,36 @@
 import { LitElement, html } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
+import { inputStyles } from '../../utilities/design-tokens.js';
 
+/**
+ * A reusable input component with validation and accessibility support.
+ *
+ * Features:
+ * - Label and placeholder support
+ * - Error state with accessible error messages
+ * - Helper text for additional guidance
+ * - ARIA attributes for accessibility
+ * - Custom input-change event for value updates
+ * - Autocomplete support
+ * - Dark mode support
+ *
+ * @example
+ * // Basic usage
+ * html`<ui-input label="Email" name="email" type="email"></ui-input>`
+ *
+ * // With validation error
+ * html`<ui-input label="Name" name="name" required .error=${this.nameError}></ui-input>`
+ *
+ * // With helper text
+ * html`<ui-input label="Username" helperText="Enter a unique username"></ui-input>`
+ *
+ * // Listening to changes
+ * html`<ui-input
+ *   label="Search"
+ *   name="search"
+ *   @input-change=${this.handleSearch}
+ * ></ui-input>`
+ */
 @customElement('ui-input')
 export class UIInput extends LitElement {
   // Remove Shadow DOM to use Tailwind classes
@@ -14,6 +44,7 @@ export class UIInput extends LitElement {
   @property({ type: String }) value = '';
   @property({ type: String }) placeholder = '';
   @property({ type: String }) error = '';
+  @property({ type: String }) helperText = '';
   @property({ type: Boolean }) required = false;
   @property({ type: Boolean }) disabled = false;
   @property({ type: String }) autocomplete = '';
@@ -30,11 +61,17 @@ export class UIInput extends LitElement {
     );
   }
 
+  private getInputClasses(): string {
+    return `${inputStyles.base} ${this.error ? inputStyles.states.error : inputStyles.states.default}`;
+  }
+
   render() {
+    const errorId = this.error ? `${this.name}-error` : undefined;
+
     return html`
       <div class="flex flex-col gap-2">
         ${this.label
-          ? html`<label for=${this.name} class="text-sm font-medium text-gray-700">${this.label}${this.required ? ' *' : ''}</label>`
+          ? html`<label for=${this.name} class="${inputStyles.label}">${this.label}${this.required ? ' *' : ''}</label>`
           : ''}
         <input
           id=${this.name}
@@ -45,12 +82,13 @@ export class UIInput extends LitElement {
           ?required=${this.required}
           ?disabled=${this.disabled}
           autocomplete=${this.autocomplete}
-          class=${this.error
-            ? 'w-full px-3 py-2 border border-red-500 rounded-md text-sm transition-all focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50 disabled:bg-gray-100 disabled:cursor-not-allowed'
-            : 'w-full px-3 py-2 border border-gray-300 rounded-md text-sm transition-all focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 disabled:bg-gray-100 disabled:cursor-not-allowed'}
+          class=${this.getInputClasses()}
+          aria-describedby=${errorId || ''}
+          aria-invalid=${this.error ? 'true' : 'false'}
           @input=${this.handleInput}
         />
-        ${this.error ? html`<span class="text-sm text-red-500">${this.error}</span>` : ''}
+        ${this.error ? html`<span id=${errorId} class="${inputStyles.errorText}">${this.error}</span>` : ''}
+        ${this.helperText && !this.error ? html`<span class="${inputStyles.helperText}">${this.helperText}</span>` : ''}
       </div>
     `;
   }

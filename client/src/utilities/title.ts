@@ -29,6 +29,8 @@ export const getPageNameFromPath = (pathname: string): string => {
       return 'Verify Email';
     case '/home':
       return 'Home';
+    case '/invite':
+      return 'Invite';
     case '/admin/system':
       return 'System Admin';
     default:
