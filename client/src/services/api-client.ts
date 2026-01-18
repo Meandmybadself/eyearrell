@@ -731,6 +731,14 @@ export class ApiClient {
       body: JSON.stringify({ achievementKeys })
     });
   }
+
+  // Invitation endpoints
+  async sendInvitation(email: string): Promise<ApiResponse<null>> {
+    return this.request<ApiResponse<null>>('/invitations', {
+      method: 'POST',
+      body: JSON.stringify({ email })
+    });
+  }
 }
 
 // Export a default instance

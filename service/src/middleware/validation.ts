@@ -300,3 +300,8 @@ export const personInterestItemSchema = z.object({
 export const personInterestsSchema = z.object({
   interests: z.array(personInterestItemSchema).min(0, 'Interests array is required')
 });
+
+// Invitation schema
+export const invitationSchema = z.object({
+  email: z.string().email('Invalid email format')
+});
