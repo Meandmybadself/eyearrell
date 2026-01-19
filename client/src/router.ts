@@ -21,6 +21,7 @@ import './pages/group-detail-page.js';
 import './pages/groups-page.js';
 import './pages/achievements-page.js';
 import './pages/invite-page.js';
+import './pages/admin-interests-page.js';
 
 export interface RouteConfig {
   path: string;
@@ -142,6 +143,19 @@ export const createRoutes = (store: AppStore): RouteConfig[] => {
           return html`<login-page></login-page>`;
         }
         return html`<admin-users-page></admin-users-page>`;
+      }
+    },
+    {
+      path: '/admin/interests',
+      render: () => {
+        const state = store.getState();
+        const isAuthenticated = selectIsAuthenticated(state);
+
+        if (!isAuthenticated) {
+          store.dispatch(setAttemptedPath('/admin/interests'));
+          return html`<login-page></login-page>`;
+        }
+        return html`<admin-interests-page></admin-interests-page>`;
       }
     },
     {
