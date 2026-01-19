@@ -1,4 +1,5 @@
 import { MailerSend, EmailParams, Recipient, Sender } from 'mailersend'
+import { prisma } from './prisma.js'
 
 let mailerSendClient: MailerSend | null = null
 
@@ -97,24 +98,39 @@ export const sendInvitationEmail = async (email: string, inviterEmail: string) =
     return
   }
 
+  // Fetch system name if available
+  const system = await prisma.system.findFirst({
+    where: { id: 1, deleted: false },
+    select: { name: true }
+  })
+  const systemName = system?.name
+
   const invitationLink = buildInvitationLink(email)
   const sender = new Sender(fromAddress, resolveFromName())
   const recipients = [new Recipient(email)]
 
+  const subject = systemName
+    ? `You're invited to join ${systemName}!`
+    : "You're invited to join IRL!"
+
+  const inviteText = systemName
+    ? `${inviterEmail} has invited you to join ${systemName}.`
+    : `${inviterEmail} has invited you to join our community directory.`
+
   const params = new EmailParams()
     .setFrom(sender)
     .setTo(recipients)
-    .setSubject("You're invited to join IRL!")
+    .setSubject(subject)
     .setText([
       'Hi there!',
-      `${inviterEmail} has invited you to join our community directory.`,
+      inviteText,
       'Click the link below to create your account and get started.',
       `Registration link: ${invitationLink}`,
       'Looking forward to seeing you in the community!'
     ].join('\n\n'))
     .setHtml(`
       <p>Hi there!</p>
-      <p><strong>${inviterEmail}</strong> has invited you to join our community directory.</p>
+      <p><strong>${inviterEmail}</strong> has invited you to join ${systemName ? `<strong>${systemName}</strong>` : 'our community directory'}.</p>
       <p>Click the link below to create your account and get started.</p>
       <p><a href="${invitationLink}">Create your account</a></p>
       <p>Looking forward to seeing you in the community!</p>
