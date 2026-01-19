@@ -2,7 +2,7 @@ import { LitElement, html } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import type { AchievementWithCompletion } from '@irl/shared';
 import { renderIcon } from '../../utilities/icons.js';
-import { achievementStyles, textColors, backgroundColors } from '../../utilities/design-tokens.js';
+import { achievementStyles, textColors, backgroundColors, buttonStyles } from '../../utilities/design-tokens.js';
 
 /**
  * A card component for displaying achievement information.
@@ -78,8 +78,20 @@ export class AchievementCard extends LitElement {
           <div class="text-sm ${achievementStyles.points}">
             +${achievement.points} points
           </div>
-          <div class="${achievementStyles.category.base} ${achievementStyles.category.bg} ${achievementStyles.category.text}">
-            ${achievement.category}
+          <div class="flex items-center gap-2">
+            ${!isCompleted && achievement.actionUrl
+              ? html`
+                  <a
+                    href="${achievement.actionUrl}"
+                    class="${buttonStyles.base} ${buttonStyles.sizes.sm} ${buttonStyles.variants.primary}"
+                  >
+                    Start
+                  </a>
+                `
+              : ''}
+            <div class="${achievementStyles.category.base} ${achievementStyles.category.bg} ${achievementStyles.category.text}">
+              ${achievement.category}
+            </div>
           </div>
         </div>
       </div>

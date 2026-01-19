@@ -258,6 +258,7 @@ model Achievement {
   points      Int      // Points awarded
   category    AchievementCategory
   iconName    String?  // Icon identifier for UI
+  actionUrl   String?  // URL path to perform the action for this achievement
   sortOrder   Int      @default(0) // Display order in UI
   isActive    Boolean  @default(true) // Can disable achievements
   createdAt   DateTime @default(now())

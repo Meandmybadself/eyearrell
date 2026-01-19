@@ -9,6 +9,7 @@ import { uploadImageToCloudinary } from '../utils/cloudinary-upload.js';
 import type { ApiResponse, PaginatedResponse, Person } from '@irl/shared';
 import { geocodeAddress } from '../lib/geocoding.js';
 import { Prisma } from '@prisma/client';
+import { achievementTriggers } from '../services/achievement-triggers.js';
 
 const router: ReturnType<typeof Router> = Router();
 
@@ -330,6 +331,9 @@ router.post('/:displayId/avatar', requireAuth, validateDisplayIdParam, canModify
     where: { displayId },
     data: { imageURL: uploadResult.secureUrl }
   });
+
+  // Check for profile-related achievements
+  await achievementTriggers.checkProfileAchievements(updatedPerson.id);
 
   const response: ApiResponse<Person> = {
     success: true,

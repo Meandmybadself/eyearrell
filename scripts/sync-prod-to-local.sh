@@ -81,14 +81,14 @@ get_counts() {
     local db_url="$1"
     local via_ssh="$2"
 
-    local query="SELECT
-        (SELECT COUNT(*) FROM \"User\" WHERE deleted = false) as users,
-        (SELECT COUNT(*) FROM \"Person\" WHERE deleted = false) as persons,
-        (SELECT COUNT(*) FROM \"Group\" WHERE deleted = false) as groups,
-        (SELECT COUNT(*) FROM \"ContactInformation\" WHERE deleted = false) as contacts;"
+    local query='SELECT
+        (SELECT COUNT(*) FROM users WHERE deleted = false) as users,
+        (SELECT COUNT(*) FROM people WHERE deleted = false) as persons,
+        (SELECT COUNT(*) FROM groups WHERE deleted = false) as groups,
+        (SELECT COUNT(*) FROM contact_information WHERE deleted = false) as contacts;'
 
     if [ "$via_ssh" = "true" ]; then
-        ssh "$PROD_SERVER" "psql '$db_url' -t -A -F',' -c \"$query\""
+        echo "$query" | ssh "$PROD_SERVER" "psql '$db_url' -t -A -F','"
     else
         psql "$db_url" -t -A -F',' -c "$query"
     fi
@@ -177,16 +177,16 @@ echo ""
 echo -e "${YELLOW}Clearing local database...${NC}"
 
 # Generate truncate commands for all tables except sessions and migrations
-TRUNCATE_QUERY="DO \$\$
+psql "$LOCAL_DB_URL" <<'EOF'
+DO $$
 DECLARE
     r RECORD;
 BEGIN
     FOR r IN (SELECT tablename FROM pg_tables WHERE schemaname = 'public' AND tablename NOT IN ('sessions', '_prisma_migrations')) LOOP
-        EXECUTE 'TRUNCATE TABLE \"' || r.tablename || '\" CASCADE';
+        EXECUTE 'TRUNCATE TABLE "' || r.tablename || '" CASCADE';
     END LOOP;
-END \$\$;"
-
-psql "$LOCAL_DB_URL" -c "$TRUNCATE_QUERY"
+END $$;
+EOF
 echo -e "${GREEN}Local data cleared${NC}"
 
 echo -e "${YELLOW}Restoring production data to local...${NC}"

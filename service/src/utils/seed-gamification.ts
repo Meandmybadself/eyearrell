@@ -8,6 +8,7 @@ interface AchievementData {
   points: number;
   category: AchievementCategory;
   iconName?: string;
+  actionUrl?: string;
   sortOrder: number;
 }
 
@@ -28,6 +29,7 @@ const achievementsData: AchievementData[] = [
     points: 10,
     category: 'ONBOARDING',
     iconName: 'envelope-check',
+    actionUrl: '/profile',
     sortOrder: 1
   },
   {
@@ -37,6 +39,7 @@ const achievementsData: AchievementData[] = [
     points: 20,
     category: 'ONBOARDING',
     iconName: 'user-plus',
+    actionUrl: '/persons/create',
     sortOrder: 2
   },
 
@@ -48,6 +51,7 @@ const achievementsData: AchievementData[] = [
     points: 15,
     category: 'PROFILE',
     iconName: 'user-edit',
+    actionUrl: '/persons/me',
     sortOrder: 3
   },
   {
@@ -57,6 +61,7 @@ const achievementsData: AchievementData[] = [
     points: 15,
     category: 'PROFILE',
     iconName: 'camera',
+    actionUrl: '/persons/me',
     sortOrder: 4
   },
   {
@@ -66,6 +71,7 @@ const achievementsData: AchievementData[] = [
     points: 10,
     category: 'PROFILE',
     iconName: 'heart',
+    actionUrl: '/persons/me',
     sortOrder: 5
   },
   {
@@ -75,6 +81,7 @@ const achievementsData: AchievementData[] = [
     points: 25,
     category: 'PROFILE',
     iconName: 'stars',
+    actionUrl: '/persons/me',
     sortOrder: 6
   },
   {
@@ -84,6 +91,7 @@ const achievementsData: AchievementData[] = [
     points: 50,
     category: 'PROFILE',
     iconName: 'trophy',
+    actionUrl: '/persons/me',
     sortOrder: 7
   },
 
@@ -95,6 +103,7 @@ const achievementsData: AchievementData[] = [
     points: 30,
     category: 'PRIVACY',
     iconName: 'shield-check',
+    actionUrl: '/persons/me',
     sortOrder: 8
   },
   {
@@ -104,6 +113,7 @@ const achievementsData: AchievementData[] = [
     points: 20,
     category: 'PRIVACY',
     iconName: 'lock-open',
+    actionUrl: '/persons/me',
     sortOrder: 9
   },
 
@@ -115,6 +125,7 @@ const achievementsData: AchievementData[] = [
     points: 25,
     category: 'DISCOVERY',
     iconName: 'map-pin',
+    actionUrl: '/persons',
     sortOrder: 10
   },
   {
@@ -124,6 +135,7 @@ const achievementsData: AchievementData[] = [
     points: 15,
     category: 'DISCOVERY',
     iconName: 'users',
+    actionUrl: '/persons',
     sortOrder: 11
   },
 
@@ -135,6 +147,7 @@ const achievementsData: AchievementData[] = [
     points: 25,
     category: 'SOCIAL',
     iconName: 'user-group',
+    actionUrl: '/groups',
     sortOrder: 12
   },
   {
@@ -144,6 +157,7 @@ const achievementsData: AchievementData[] = [
     points: 40,
     category: 'SOCIAL',
     iconName: 'building',
+    actionUrl: '/groups/create',
     sortOrder: 13
   },
   {
@@ -153,6 +167,7 @@ const achievementsData: AchievementData[] = [
     points: 30,
     category: 'SOCIAL',
     iconName: 'crown',
+    actionUrl: '/groups',
     sortOrder: 14
   },
 
@@ -164,6 +179,7 @@ const achievementsData: AchievementData[] = [
     points: 15,
     category: 'ENGAGEMENT',
     iconName: 'address-card',
+    actionUrl: '/persons/me',
     sortOrder: 15
   },
   {
@@ -173,6 +189,7 @@ const achievementsData: AchievementData[] = [
     points: 35,
     category: 'ENGAGEMENT',
     iconName: 'star',
+    actionUrl: '/persons/me',
     sortOrder: 16
   }
 ];
@@ -225,9 +242,9 @@ const levelsData: LevelData[] = [
 export const seedGamification = async () => {
   console.log('Starting gamification seed...');
 
-  // Seed Achievements
+  // Seed Achievements (upsert to update existing with new fields like actionUrl)
   let achievementsCreated = 0;
-  let achievementsSkipped = 0;
+  let achievementsUpdated = 0;
 
   for (const achievementData of achievementsData) {
     const existing = await prisma.achievement.findUnique({
@@ -240,11 +257,24 @@ export const seedGamification = async () => {
       });
       achievementsCreated++;
     } else {
-      achievementsSkipped++;
+      // Update existing achievement with new data (preserves user completions)
+      await prisma.achievement.update({
+        where: { key: achievementData.key },
+        data: {
+          name: achievementData.name,
+          description: achievementData.description,
+          points: achievementData.points,
+          category: achievementData.category,
+          iconName: achievementData.iconName,
+          actionUrl: achievementData.actionUrl,
+          sortOrder: achievementData.sortOrder
+        }
+      });
+      achievementsUpdated++;
     }
   }
 
-  console.log(`Achievements seed: ${achievementsCreated} created, ${achievementsSkipped} skipped`);
+  console.log(`Achievements seed: ${achievementsCreated} created, ${achievementsUpdated} updated`);
 
   // Seed Levels
   let levelsCreated = 0;

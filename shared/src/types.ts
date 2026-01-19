@@ -412,6 +412,7 @@ export interface Achievement {
   points: number;
   category: AchievementCategory;
   iconName: string | null;
+  actionUrl: string | null;
   sortOrder: number;
   isActive: boolean;
   createdAt: string;
