@@ -31,7 +31,7 @@ router.post('/', requireAuth, validateBody(invitationSchema), asyncHandler(async
 
   // Send invitation email
   try {
-    await sendInvitationEmail(normalizedEmail);
+    await sendInvitationEmail(normalizedEmail, req.user.email);
   } catch (error) {
     console.error('Failed to send invitation email:', error);
     throw createError(500, 'Failed to send invitation email');

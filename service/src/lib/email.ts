@@ -86,7 +86,7 @@ export const buildInvitationLink = (email: string) => {
   return url.toString()
 }
 
-export const sendInvitationEmail = async (email: string) => {
+export const sendInvitationEmail = async (email: string, inviterEmail: string) => {
   const client = getMailerSendClient()
   const fromAddress = resolveFromAddress()
 
@@ -107,14 +107,14 @@ export const sendInvitationEmail = async (email: string) => {
     .setSubject("You're invited to join IRL!")
     .setText([
       'Hi there!',
-      "You've been invited to join our community directory.",
+      `${inviterEmail} has invited you to join our community directory.`,
       'Click the link below to create your account and get started.',
       `Registration link: ${invitationLink}`,
       'Looking forward to seeing you in the community!'
     ].join('\n\n'))
     .setHtml(`
       <p>Hi there!</p>
-      <p>You've been invited to join our community directory.</p>
+      <p><strong>${inviterEmail}</strong> has invited you to join our community directory.</p>
       <p>Click the link below to create your account and get started.</p>
       <p><a href="${invitationLink}">Create your account</a></p>
       <p>Looking forward to seeing you in the community!</p>
