@@ -24,7 +24,9 @@ const validateContactValue = async (data: z.infer<typeof contactInformationBaseS
     }
   } else if (data.type === 'PHONE') {
     try {
-      if (!isValidPhoneNumber(data.value)) {
+      // Try with explicit country code first (e.g., +1), then fall back to US default
+      const isValid = isValidPhoneNumber(data.value) || isValidPhoneNumber(data.value, 'US');
+      if (!isValid) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           message: 'Invalid phone number format',
