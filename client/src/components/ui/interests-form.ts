@@ -27,7 +27,10 @@ export class InterestsForm extends LitElement {
   private api!: ApiClient;
 
   @property({ type: String })
-  personDisplayId!: string;
+  personDisplayId = '';
+
+  @property({ type: Boolean })
+  hideSaveButton = false;
 
   @state()
   private allInterests: Interest[] = [];
@@ -58,16 +61,18 @@ export class InterestsForm extends LitElement {
         this.allInterests = interestsResponse.data;
       }
 
-      // Load person's interests
-      const personInterestsResponse = await this.api.getPersonInterests(this.personDisplayId);
-      if (personInterestsResponse.success && personInterestsResponse.data) {
-        this.personInterests = personInterestsResponse.data;
-        // Convert to interest items
-        this.interestItems = this.personInterests.map(pi => ({
-          interestId: pi.interestId,
-          level: pi.level,
-          interest: pi.interest
-        }));
+      // Load person's interests only if we have a personDisplayId
+      if (this.personDisplayId) {
+        const personInterestsResponse = await this.api.getPersonInterests(this.personDisplayId);
+        if (personInterestsResponse.success && personInterestsResponse.data) {
+          this.personInterests = personInterestsResponse.data;
+          // Convert to interest items
+          this.interestItems = this.personInterests.map(pi => ({
+            interestId: pi.interestId,
+            level: pi.level,
+            interest: pi.interest
+          }));
+        }
       }
     } catch (error) {
       this.dispatchEvent(new CustomEvent('interest-error', {
@@ -125,9 +130,33 @@ export class InterestsForm extends LitElement {
   }
 
   private async handleSave() {
+    await this.saveInterests();
+  }
+
+  /**
+   * Public method to save interests. Can be called by parent component.
+   * @param displayId - Optional displayId to use instead of this.personDisplayId
+   * @returns true if save was successful, false otherwise
+   */
+  async saveInterests(displayId?: string): Promise<boolean> {
+    const targetDisplayId = displayId || this.personDisplayId;
+    if (!targetDisplayId) {
+      this.dispatchEvent(new CustomEvent('interest-error', {
+        detail: { error: 'Cannot save interests: no person displayId provided' },
+        bubbles: true,
+        composed: true
+      }));
+      return false;
+    }
+
+    // If no interests selected, skip save (nothing to do)
+    if (this.interestItems.length === 0) {
+      return true;
+    }
+
     this.isSaving = true;
     try {
-      const response = await this.api.setPersonInterests(this.personDisplayId, {
+      const response = await this.api.setPersonInterests(targetDisplayId, {
         interests: this.interestItems.map(item => ({
           interestId: item.interestId,
           level: item.level
@@ -140,13 +169,16 @@ export class InterestsForm extends LitElement {
           bubbles: true,
           composed: true
         }));
+        return true;
       }
+      return false;
     } catch (error) {
       this.dispatchEvent(new CustomEvent('interest-error', {
         detail: { error: error instanceof Error ? error.message : 'Failed to save interests' },
         bubbles: true,
         composed: true
       }));
+      return false;
     } finally {
       this.isSaving = false;
     }
@@ -165,17 +197,19 @@ export class InterestsForm extends LitElement {
       <div class="space-y-4">
         <div class="flex items-center justify-between">
           <h3 class="text-lg font-semibold ${textColors.primary}">Interests</h3>
-          <button
-            type="button"
-            @click=${this.handleSave}
-            ?disabled=${this.isSaving}
-            class="inline-flex items-center rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-semibold text-white shadow-xs hover:bg-indigo-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            ${this.isSaving
-              ? html`<span class="inline-block w-4 h-4 border-2 border-white border-r-transparent rounded-full animate-spin mr-2"></span>`
-              : ''}
-            Save Interests
-          </button>
+          ${!this.hideSaveButton ? html`
+            <button
+              type="button"
+              @click=${this.handleSave}
+              ?disabled=${this.isSaving}
+              class="inline-flex items-center rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-semibold text-white shadow-xs hover:bg-indigo-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              ${this.isSaving
+                ? html`<span class="inline-block w-4 h-4 border-2 border-white border-r-transparent rounded-full animate-spin mr-2"></span>`
+                : ''}
+              Save Interests
+            </button>
+          ` : ''}
         </div>
 
         <div class="space-y-3 max-h-96 overflow-y-auto ${backgroundColors.content} p-4 rounded-lg border ${backgroundColors.border}">

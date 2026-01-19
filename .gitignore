@@ -11,3 +11,6 @@ service/.env
 node_modules
 dist
 tsconfig.tsbuildinfo
+
+# Database sync backups
+scripts/db-backups/

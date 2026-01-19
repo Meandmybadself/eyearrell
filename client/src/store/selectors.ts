@@ -86,6 +86,17 @@ export const selectRegistrationOpen = createSelector(
   system => system?.registrationOpen ?? false
 );
 
+export const selectSystemContactInformation = createSelector(
+  [selectSystem, selectEntities],
+  (system, entities) => {
+    if (!system || !system.contactInformation) return [];
+    // contactInformation is an array of IDs after normalization
+    return system.contactInformation
+      .map(id => entities.contactInformation[id])
+      .filter(Boolean);
+  }
+);
+
 // UI selectors
 export const selectNotifications = createSelector(
   [selectUI],

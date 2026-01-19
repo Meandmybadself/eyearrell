@@ -1,11 +1,16 @@
 import type { User, Person, Group, ContactInformation, System } from '@irl/shared';
 
+// After normalization, relations become arrays of IDs
+export interface NormalizedSystem extends System {
+  contactInformation?: number[];
+}
+
 export interface EntitiesState {
   users: Record<number, User>;
   persons: Record<number, Person>;
   groups: Record<number, Group>;
   contactInformation: Record<number, ContactInformation>;
-  system: Record<number, System>;
+  system: Record<number, NormalizedSystem>;
 }
 
 const initialState: EntitiesState = {

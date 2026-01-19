@@ -10,6 +10,7 @@ import { textColors, backgroundColors, pageStyles, contentStateStyles } from '..
 import '../components/ui/contact-info-form.js';
 import '../components/ui/image-cropper-modal.js';
 import '../components/ui/interests-form.js';
+import type { InterestsForm } from '../components/ui/interests-form.js';
 import type { AppStore } from '../store/index.js';
 import type { ApiClient } from '../services/api-client.js';
 import type { ContactInformation } from '@irl/shared';
@@ -203,23 +204,44 @@ export class PersonFormPage extends LitElement {
       };
 
       let response;
+      let savedDisplayId: string;
+
       if (this.personDisplayId) {
         // Update existing person
         response = await this.api.patchPerson(this.personDisplayId, data);
-        if (response.success) {
-          this.store.dispatch(addNotification('Person updated successfully', 'success'));
-        }
+        savedDisplayId = response.data?.displayId || this.personDisplayId;
       } else {
         // Create new person
         response = await this.api.createPerson({ ...data, userId: currentUser!.id });
-        if (response.success) {
-          this.store.dispatch(addNotification('Person created successfully', 'success'));
-        }
+        savedDisplayId = response.data?.displayId || this.displayId.trim();
       }
 
       if (response.success) {
-        // Navigate to persons list
-        window.history.pushState({}, '', '/persons');
+        // Save interests
+        const interestsForm = this.querySelector('interests-form') as InterestsForm | null;
+        if (interestsForm) {
+          const interestsSaved = await interestsForm.saveInterests(savedDisplayId);
+          if (!interestsSaved) {
+            // Interests failed but person was saved - show partial success
+            this.store.dispatch(addNotification(
+              `Person ${this.personDisplayId ? 'updated' : 'created'} but interests could not be saved. You can edit them later.`,
+              'info'
+            ));
+          } else {
+            this.store.dispatch(addNotification(
+              `Person ${this.personDisplayId ? 'updated' : 'created'} successfully`,
+              'success'
+            ));
+          }
+        } else {
+          this.store.dispatch(addNotification(
+            `Person ${this.personDisplayId ? 'updated' : 'created'} successfully`,
+            'success'
+          ));
+        }
+
+        // Navigate to person detail page
+        window.history.pushState({}, '', `/persons/${savedDisplayId}`);
         window.dispatchEvent(new PopStateEvent('popstate'));
       }
     } catch (error) {
@@ -476,19 +498,15 @@ export class PersonFormPage extends LitElement {
                 ></contact-info-form>
               ` : ''}
 
-              ${this.personDisplayId ? html`
-                <div class="pt-6 border-t ${backgroundColors.border}">
-                  <interests-form
-                    .personDisplayId=${this.personDisplayId}
-                    @interests-saved=${() => {
-                      this.store.dispatch(addNotification('Interests saved successfully', 'success'));
-                    }}
-                    @interest-error=${(e: CustomEvent) => {
-                      this.store.dispatch(addNotification(e.detail.error, 'error'));
-                    }}
-                  ></interests-form>
-                </div>
-              ` : ''}
+              <div class="pt-6 border-t ${backgroundColors.border}">
+                <interests-form
+                  .personDisplayId=${this.personDisplayId || ''}
+                  .hideSaveButton=${true}
+                  @interest-error=${(e: CustomEvent) => {
+                    this.store.dispatch(addNotification(e.detail.error, 'error'));
+                  }}
+                ></interests-form>
+              </div>
 
               <div class="flex items-center justify-between gap-x-4">
                 <button

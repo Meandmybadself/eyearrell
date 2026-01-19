@@ -4,7 +4,7 @@ import { prisma } from '../lib/prisma.js';
 import { asyncHandler, createError } from '../middleware/error-handler.js';
 import { validateBody, systemSchema, updateSystemSchema } from '../middleware/validation.js';
 import { requireSystemAdmin } from '../middleware/auth.js';
-import type { ApiResponse, System, SystemExportData } from '@irl/shared';
+import type { ApiResponse, System, SystemWithRelations, SystemExportData, ContactInformation } from '@irl/shared';
 import crypto from 'crypto';
 
 const router: ReturnType<typeof Router> = Router();
@@ -22,6 +22,18 @@ const formatSystem = ({ id, name, description, registrationOpen, createdAt, upda
   updatedAt: updatedAt.toISOString()
 });
 
+const formatContactInformation = (contact: any): ContactInformation => ({
+  id: contact.id,
+  type: contact.type,
+  label: contact.label,
+  value: contact.value,
+  privacy: contact.privacy,
+  latitude: contact.latitude != null ? parseFloat(contact.latitude.toString()) : null,
+  longitude: contact.longitude != null ? parseFloat(contact.longitude.toString()) : null,
+  createdAt: contact.createdAt.toISOString(),
+  updatedAt: contact.updatedAt.toISOString()
+});
+
 const findActiveSystem = async (): Promise<PersistedSystem | null> => {
   return prisma.system.findFirst({
     where: {
@@ -31,17 +43,41 @@ const findActiveSystem = async (): Promise<PersistedSystem | null> => {
   });
 };
 
-// GET /api/system - Retrieve the singleton system configuration
+// GET /api/system - Retrieve the singleton system configuration with public contact info
 router.get('/', asyncHandler(async (_req, res) => {
-  const item = await findActiveSystem();
+  const item = await prisma.system.findFirst({
+    where: {
+      id: SINGLE_SYSTEM_ID,
+      deleted: false
+    },
+    include: {
+      contactInformation: {
+        include: {
+          contactInformation: true
+        },
+        where: {
+          contactInformation: {
+            deleted: false,
+            privacy: 'PUBLIC'
+          }
+        }
+      }
+    }
+  });
 
   if (!item) {
     throw createError(404, 'System not found');
   }
 
-  const response: ApiResponse<System> = {
+  const contactInformation = item.contactInformation
+    .map(mapping => formatContactInformation(mapping.contactInformation));
+
+  const response: ApiResponse<SystemWithRelations> = {
     success: true,
-    data: formatSystem(item)
+    data: {
+      ...formatSystem(item),
+      contactInformation
+    }
   };
 
   res.json(response);

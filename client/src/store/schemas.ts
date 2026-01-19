@@ -5,7 +5,9 @@ export const userSchema = new schema.Entity('users');
 export const personSchema = new schema.Entity('persons');
 export const groupSchema = new schema.Entity('groups');
 export const contactInformationSchema = new schema.Entity('contactInformation');
-export const systemSchema = new schema.Entity('system');
+export const systemSchema = new schema.Entity('system', {
+  contactInformation: [contactInformationSchema]
+});
 
 // Define relationships
 personSchema.define({
