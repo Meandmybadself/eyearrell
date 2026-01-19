@@ -8,6 +8,12 @@ import { Pool } from 'pg';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { prisma } from './lib/prisma.js';
+import { checkEnvironment } from './lib/env-check.js';
+
+// Validate environment variables before starting
+if (process.env.NODE_ENV !== 'test') {
+  checkEnvironment();
+}
 
 // Import passport configuration
 import passport from './config/passport.js';
