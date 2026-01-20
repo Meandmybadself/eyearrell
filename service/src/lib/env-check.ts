@@ -15,10 +15,12 @@ const envVars: EnvVar[] = [
   { name: 'SESSION_SECRET', required: true, description: 'Secret for session encryption' },
   { name: 'CLIENT_URL', required: true, description: 'Frontend URL for CORS' },
 
-  // Required - Email
-  { name: 'MAILERSEND_API_TOKEN', required: true, description: 'MailerSend API token for sending emails' },
-  { name: 'MAILERSEND_FROM_EMAIL', required: true, description: 'From email address for MailerSend' },
-  { name: 'MAILERSEND_FROM_NAME', required: true, description: 'From name for MailerSend' },
+  // Required - AWS SES SMTP Email
+  { name: 'AWS_SES_SMTP_HOST', required: true, description: 'AWS SES SMTP host (e.g., email-smtp.us-east-2.amazonaws.com)' },
+  { name: 'AWS_SES_SMTP_USER', required: true, description: 'AWS SES SMTP username' },
+  { name: 'AWS_SES_SMTP_PASS', required: true, description: 'AWS SES SMTP password' },
+  { name: 'AWS_SES_FROM_EMAIL', required: true, description: 'From email address for SES (must be verified)' },
+  { name: 'AWS_SES_FROM_NAME', required: true, description: 'From name for SES emails' },
 
   // Required - Cloudinary
   { name: 'CLOUDINARY_CLOUD_NAME', required: true, description: 'Cloudinary cloud name' },

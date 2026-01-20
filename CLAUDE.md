@@ -13,7 +13,7 @@ This is a Node TypeScript service and UI providing a community directory for exc
 * `passport` - used to facilitate user authentication via Express sessions.
 * `passport-local` - used for local authentication.
 * `bcrypt` - used for hashing and salting passwords.
-* `@sendgrid/mail` - used for sending emails to validate `User` email addresses and for resetting `User` passwords.
+* `nodemailer` - used for sending emails via AWS SES SMTP to validate `User` email addresses and for resetting `User` passwords.
 * `libphonenumber-js` - used for validating phone numbers.
 * `zod` - used for validation of data.
 
@@ -24,7 +24,7 @@ This is a Node TypeScript service and UI providing a community directory for exc
 * `vite` - bundler
 
 ## Services
-* `sendgrid` - Used for sending emails to validate `User` email addresses and for resetting `User` passwords.
+* `AWS SES SMTP` - Used for sending emails via SMTP to validate `User` email addresses and for resetting `User` passwords.
 * `nominatim` - Used for geocoding addresses.
 
 ## Folder Organization
