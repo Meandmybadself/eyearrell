@@ -121,3 +121,176 @@ Properties:
 
 ## Available Tools
 * `gh` - Use for interacting with Github
+
+---
+
+# Code Map
+
+This section provides a structural overview of the codebase for efficient navigation.
+
+## Project Structure
+
+```
+irl-mobile/
+├── client/          # Lit web components UI
+├── service/         # Express REST API backend
+├── shared/          # Shared types and constants
+├── scripts/         # Deployment scripts
+├── data/            # Data files and migrations
+└── prd/             # Product documentation
+```
+
+## Service Module (`service/`)
+
+### Entry Point
+- `service/src/index.ts` - Express server setup, middleware, route registration
+
+### Database
+- `service/prisma/schema.prisma` - Prisma schema with all models and enums
+- `service/src/lib/prisma.ts` - Prisma client singleton
+
+### Configuration
+- `service/src/config/passport.ts` - Local authentication strategy
+- `service/src/config/cloudinary.ts` - Image upload config
+- `service/src/lib/env-check.ts` - Environment variable validation
+
+### Core Libraries
+- `service/src/lib/email.ts` - AWS SES SMTP via nodemailer
+- `service/src/lib/geocoding.ts` - Nominatim integration
+
+### Middleware (`service/src/middleware/`)
+| File | Purpose |
+|------|---------|
+| `auth.ts` | `requireAuth`, `requireSystemAdmin` |
+| `authorization.ts` | Permission checks for persons/groups |
+| `error-handler.ts` | Global error handling, `asyncHandler()` |
+| `audit-logger.ts` | API request logging |
+| `masquerade.ts` | Admin impersonation |
+| `validation.ts` | Zod schemas, request validation |
+
+### API Routes (`service/src/routes/`)
+| File | Endpoints | Purpose |
+|------|-----------|---------|
+| `auth.ts` | `/api/auth/*` | Login, register, logout, email verification |
+| `users.ts` | `/api/users` | User account management |
+| `persons.ts` | `/api/persons` | Person profiles CRUD |
+| `groups.ts` | `/api/groups` | Group management with hierarchy |
+| `contact-information.ts` | `/api/contact-information` | Contact details |
+| `contact-mappings.ts` | `/api/contact-mappings` | Map contacts to entities |
+| `person-groups.ts` | `/api/person-groups` | Person-group membership |
+| `claims.ts` | `/api/claims` | Person transfer mechanism |
+| `group-invites.ts` | `/api/group-invites` | Group invitations |
+| `interests.ts` | `/api/interests` | Interest/skill definitions |
+| `person-interests.ts` | `/api/persons/:id/interests` | Person interest levels |
+| `person-recommendations.ts` | `/api/persons/:id/recommendations` | Similar persons |
+| `system.ts` | `/api/system` | Organization settings |
+| `audit-logs.ts` | `/api/audit-logs` | API logging (admin) |
+| `masquerade.ts` | `/api/masquerade` | Admin impersonation |
+| `nearby.ts` | `/api/nearby` | Location-based discovery |
+| `gamification.ts` | `/api/gamification/*` | Achievements, levels, points |
+| `invitations.ts` | `/api/invitations` | Send group invites |
+
+### Services (`service/src/services/`)
+- `achievement-triggers.ts` - Achievement unlock conditions
+- `gamification-service.ts` - Points, levels, leaderboards
+
+### Utilities (`service/src/utils/`)
+- `prisma-helpers.ts` - Common Prisma queries
+- `cloudinary-upload.ts` - Image uploads
+- `sanitization.ts` - Input sanitization
+- `seed-*.ts` - Database seeding scripts
+
+## Client Module (`client/`)
+
+### Entry Point
+- `client/src/index.ts` - Bootstrap app-root element
+- `client/src/app.ts` - AppRoot LitElement, Redux store, router init
+
+### Routing
+- `client/src/router.ts` - Route definitions, protected/public routes
+
+### State Management (`client/src/store/`)
+- `index.ts` - Redux store factory
+- `slices/auth.ts` - Authentication state
+- `slices/entities.ts` - Normalized data (users, persons, groups)
+- `slices/ui.ts` - Notifications, modals, loading
+- `slices/system.ts` - Organization data
+- `slices/masquerade.ts` - Impersonation state
+- `selectors.ts` - Memoized selectors
+- `schemas.ts` - Normalizr schemas
+
+### Services
+- `client/src/services/api-client.ts` - HTTP client for all API calls
+
+### Pages (`client/src/pages/`)
+| Page | Purpose |
+|------|---------|
+| `login-page.ts` | User login form |
+| `register-page.ts` | User registration |
+| `verify-email-page.ts` | Email verification |
+| `profile-page.ts` | User account management |
+| `home-page.ts` | Dashboard with stats |
+| `persons-page.ts` | Person directory |
+| `person-detail-page.ts` | Person profile view |
+| `person-form-page.ts` | Create/edit person |
+| `groups-page.ts` | Group directory |
+| `group-detail-page.ts` | Group profile view |
+| `group-form-page.ts` | Create/edit group |
+| `achievements-page.ts` | Gamification hub |
+| `invite-page.ts` | Send group invites |
+| `system-admin-page.ts` | System settings |
+| `admin-users-page.ts` | User management |
+| `admin-interests-page.ts` | Interest management |
+| `audit-logs-page.ts` | Audit trail |
+
+### Components (`client/src/components/`)
+
+**Layout** (`layout/`):
+- `navigation.ts` - Top nav bar
+- `app-layout.ts`, `page-layout.ts` - Layout wrappers
+- `admin-nav.ts` - Admin navigation
+- `masquerade-banner.ts` - Impersonation status
+
+**UI** (`ui/`):
+- `button.ts`, `input.ts` - Form elements
+- `notification.ts` - Toast notifications
+- `ui-spinner.ts` - Loading spinner
+- `person-list.ts`, `person-search.ts` - Person components
+- `group-list.ts`, `group-search.ts` - Group components
+- `contact-info-form.ts`, `contact-info-display.ts` - Contact components
+- `interests-form.ts` - Interest level slider
+- `bulk-import-modal.ts` - CSV/TSV import
+- `image-cropper-modal.ts` - Image upload/crop
+- `achievement-card.ts`, `level-progress.ts` - Gamification UI
+- `nearby-persons-and-groups.ts` - Location discovery
+- `similar-persons-card.ts` - Recommendations
+
+### Utilities (`client/src/utilities/`)
+- `design-tokens.ts` - Tailwind constants
+- `icons.ts` - SVG icons
+- `fuzzy-search.ts` - Client-side search
+- `validation.ts` - Form validation
+- `tsv-parser.ts` - Bulk import parsing
+
+## Shared Module (`shared/`)
+
+- `shared/src/index.ts` - Main exports
+- `shared/src/types.ts` - All TypeScript interfaces (User, Person, Group, ContactInformation, etc.)
+- `shared/src/constants.ts` - Application constants
+
+## Key Search Patterns
+
+| Looking for... | Search in |
+|----------------|-----------|
+| Authentication | `service/src/routes/auth.ts`, `service/src/config/passport.ts`, `client/src/pages/login-page.ts` |
+| Database schema | `service/prisma/schema.prisma` |
+| Email sending | `service/src/lib/email.ts` |
+| Input validation | `service/src/middleware/validation.ts` |
+| API endpoints | `service/src/routes/*.ts` |
+| Redux state | `client/src/store/slices/*.ts` |
+| UI components | `client/src/components/ui/*.ts` |
+| Page views | `client/src/pages/*.ts` |
+| Type definitions | `shared/src/types.ts` |
+| Admin features | Files with `admin` in name, `masquerade.ts` |
+| Gamification | `gamification.ts`, `achievement-triggers.ts`, `achievements-page.ts` |
+| Location/nearby | `geocoding.ts`, `nearby.ts`, `nearby-persons-and-groups.ts` |
