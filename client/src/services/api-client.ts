@@ -303,6 +303,18 @@ export class ApiClient {
     });
   }
 
+  async joinGroup(displayId: string): Promise<ApiResponse<PersonGroup>> {
+    return this.request<ApiResponse<PersonGroup>>(`/groups/${displayId}/join`, {
+      method: 'POST'
+    });
+  }
+
+  async leaveGroup(displayId: string): Promise<ApiResponse<null>> {
+    return this.request<ApiResponse<null>>(`/groups/${displayId}/leave`, {
+      method: 'POST'
+    });
+  }
+
   // ContactInformation endpoints
   async getContactInformation(params?: PaginationParams): Promise<PaginatedResponse<ContactInformation>> {
     const query = new URLSearchParams();

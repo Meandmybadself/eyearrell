@@ -51,6 +51,9 @@ export class GroupFormPage extends LitElement {
   private allowsAnyUserToCreateSubgroup = false;
 
   @state()
+  private allowsJoins = false;
+
+  @state()
   private parentGroup: Group | null = null;
 
   @state()
@@ -108,6 +111,7 @@ export class GroupFormPage extends LitElement {
         this.description = group.description || '';
         this.publiclyVisible = group.publiclyVisible;
         this.allowsAnyUserToCreateSubgroup = group.allowsAnyUserToCreateSubgroup;
+        this.allowsJoins = group.allowsJoins;
 
         // TODO: Load parent group if it exists
         // Note: This requires fetching by ID, but we need displayId for the new API
@@ -156,6 +160,8 @@ export class GroupFormPage extends LitElement {
       this.publiclyVisible = type === 'checkbox' ? (target as HTMLInputElement).checked : value === 'true';
     } else if (name === 'allowsAnyUserToCreateSubgroup') {
       this.allowsAnyUserToCreateSubgroup = type === 'checkbox' ? (target as HTMLInputElement).checked : value === 'true';
+    } else if (name === 'allowsJoins') {
+      this.allowsJoins = type === 'checkbox' ? (target as HTMLInputElement).checked : value === 'true';
     }
   }
 
@@ -207,6 +213,7 @@ export class GroupFormPage extends LitElement {
         description: this.description.trim() || null,
         publiclyVisible: this.publiclyVisible,
         allowsAnyUserToCreateSubgroup: this.allowsAnyUserToCreateSubgroup,
+        allowsJoins: this.allowsJoins,
         parentGroupId: this.parentGroup?.id || null
       };
 
@@ -384,6 +391,27 @@ export class GroupFormPage extends LitElement {
                   </label>
                   <p class="${textColors.tertiary}">
                     Let any user create subgroups under this group
+                  </p>
+                </div>
+              </div>
+
+              <div class="relative flex items-start">
+                <div class="flex h-6 items-center">
+                  <input
+                    id="allowsJoins"
+                    name="allowsJoins"
+                    type="checkbox"
+                    .checked=${this.allowsJoins}
+                    class="h-4 w-4 rounded ${backgroundColors.border} text-indigo-600 focus:ring-indigo-600"
+                    @change=${this.handleInputChange}
+                  />
+                </div>
+                <div class="ml-3 text-sm/6">
+                  <label for="allowsJoins" class="font-medium ${textColors.primary}">
+                    Allow Users to Join
+                  </label>
+                  <p class="${textColors.tertiary}">
+                    Allow any user with a person profile to join this group directly
                   </p>
                 </div>
               </div>

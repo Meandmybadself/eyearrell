@@ -87,6 +87,7 @@ model Group {
   description                   String?
   parentGroupId                 Int?
   allowsAnyUserToCreateSubgroup Boolean                   @default(false)
+  allowsJoins                   Boolean                   @default(false)
   publiclyVisible               Boolean                   @default(true)
   createdAt                     DateTime                  @default(now())
   updatedAt                     DateTime                  @updatedAt

@@ -219,6 +219,7 @@ router.get('/export', requireSystemAdmin, asyncHandler(async (_req, res) => {
       description: g.description,
       parentGroupId: g.parentGroupId,
       allowsAnyUserToCreateSubgroup: g.allowsAnyUserToCreateSubgroup,
+      allowsJoins: g.allowsJoins,
       publiclyVisible: g.publiclyVisible,
       createdAt: g.createdAt.toISOString(),
       updatedAt: g.updatedAt.toISOString()

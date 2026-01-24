@@ -133,6 +133,7 @@ const groupBaseSchema = z.object({
   parentGroupId: z.number().int('Parent Group ID must be an integer').optional().nullable(),
   parentGroupDisplayId: z.string().optional().nullable(),
   allowsAnyUserToCreateSubgroup: z.boolean().optional(),
+  allowsJoins: z.boolean().optional(),
   publiclyVisible: z.boolean().optional()
 });
 

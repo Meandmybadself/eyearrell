@@ -534,3 +534,148 @@ export const requireSystemAdmin = async (req: Request, _res: Response, next: Nex
 
   next();
 };
+
+/**
+ * Middleware to check if user can join a group.
+ *
+ * Authorization rules:
+ * 1. System admins can join any group
+ * 2. User must have an active person (currentPersonId in session)
+ * 3. Group must have allowsJoins = true
+ * 4. Group must exist and not be deleted
+ * 5. Person must not already be a member
+ */
+export const canJoinGroup = async (req: Request, _res: Response, next: NextFunction) => {
+  try {
+    const { displayId } = req.params;
+    const userId = req.user?.id;
+
+    if (!userId) {
+      throw createError(401, 'Authentication required');
+    }
+
+    // Get current person from session
+    const currentPersonId = req.session.currentPersonId;
+    if (!currentPersonId) {
+      throw createError(403, 'You must have an active person profile to join groups');
+    }
+
+    // Verify person exists and belongs to user
+    const person = await prisma.person.findFirst({
+      where: { id: currentPersonId, userId, deleted: false }
+    });
+
+    if (!person) {
+      throw createError(403, 'Invalid person profile');
+    }
+
+    // Get group
+    const group = await prisma.group.findFirst({
+      where: { displayId, deleted: false },
+      include: {
+        people: {
+          where: { personId: currentPersonId }
+        }
+      }
+    });
+
+    if (!group) {
+      throw createError(404, 'Group not found');
+    }
+
+    // System admins can join any group regardless of allowsJoins setting
+    if (!group.allowsJoins && !req.user?.isSystemAdmin) {
+      throw createError(403, 'This group does not allow self-service joining. Please request an invitation from a group administrator.');
+    }
+
+    // Check if already a member
+    if (group.people.length > 0) {
+      throw createError(400, 'You are already a member of this group');
+    }
+
+    // Attach person and group to request for controller use
+    (req as any).currentPerson = person;
+    (req as any).targetGroup = group;
+
+    next();
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Middleware to check if user can leave a group.
+ *
+ * Authorization rules:
+ * 1. User must have an active person (currentPersonId in session)
+ * 2. Person must be a member of the group
+ * 3. If person is an admin, they cannot leave if they are the last admin
+ */
+export const canLeaveGroup = async (req: Request, _res: Response, next: NextFunction) => {
+  try {
+    const { displayId } = req.params;
+    const userId = req.user?.id;
+
+    if (!userId) {
+      throw createError(401, 'Authentication required');
+    }
+
+    // Get current person from session
+    const currentPersonId = req.session.currentPersonId;
+    if (!currentPersonId) {
+      throw createError(403, 'You must have an active person profile to leave groups');
+    }
+
+    // Verify person exists and belongs to user
+    const person = await prisma.person.findFirst({
+      where: { id: currentPersonId, userId, deleted: false }
+    });
+
+    if (!person) {
+      throw createError(403, 'Invalid person profile');
+    }
+
+    // Get group and membership
+    const group = await prisma.group.findFirst({
+      where: { displayId, deleted: false },
+      include: {
+        people: {
+          where: { personId: currentPersonId }
+        }
+      }
+    });
+
+    if (!group) {
+      throw createError(404, 'Group not found');
+    }
+
+    // Check if member
+    if (group.people.length === 0) {
+      throw createError(400, 'You are not a member of this group');
+    }
+
+    const membership = group.people[0];
+
+    // If admin, check for last admin scenario
+    if (membership.isAdmin) {
+      const adminCount = await prisma.personGroup.count({
+        where: {
+          groupId: group.id,
+          isAdmin: true
+        }
+      });
+
+      if (adminCount <= 1) {
+        throw createError(400, 'Cannot leave group: You are the last administrator. Please assign another administrator before leaving.');
+      }
+    }
+
+    // Attach membership and person to request for controller use
+    (req as any).membership = membership;
+    (req as any).currentPerson = person;
+
+    next();
+  } catch (error) {
+    next(error);
+  }
+};

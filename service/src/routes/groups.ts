@@ -3,9 +3,9 @@ import { prisma } from '../lib/prisma.js';
 import { asyncHandler, createError } from '../middleware/error-handler.js';
 import { validateBody, validateDisplayIdParam, validateSearchQuery, groupSchema, updateGroupSchema, bulkGroupsSchema } from '../middleware/validation.js';
 import { requireAuth } from '../middleware/auth.js';
-import { canModifyGroup, canCreateGroup } from '../middleware/authorization.js';
+import { canModifyGroup, canCreateGroup, canJoinGroup, canLeaveGroup } from '../middleware/authorization.js';
 import { getUserFirstPerson } from '../utils/prisma-helpers.js';
-import type { ApiResponse, PaginatedResponse, Group } from '@irl/shared';
+import type { ApiResponse, PaginatedResponse, Group, PersonGroup } from '@irl/shared';
 import { geocodeAddress } from '../lib/geocoding.js';
 import { Prisma } from '@prisma/client';
 
@@ -445,6 +445,103 @@ router.delete('/:displayId', requireAuth, validateDisplayIdParam, canModifyGroup
   const response: ApiResponse<null> = {
     success: true,
     message: 'Group deleted successfully'
+  };
+
+  res.json(response);
+}));
+
+// POST /api/groups/:displayId/join - Join a group (self-service)
+router.post('/:displayId/join', requireAuth, validateDisplayIdParam, canJoinGroup, asyncHandler(async (req, res) => {
+  const currentPerson = (req as any).currentPerson;
+  const targetGroup = (req as any).targetGroup;
+
+  try {
+    // Create PersonGroup relationship (non-admin)
+    // Handle race condition: if user is already a member, upsert will return existing record
+    const personGroup = await prisma.personGroup.upsert({
+      where: {
+        personId_groupId: {
+          personId: currentPerson.id,
+          groupId: targetGroup.id
+        }
+      },
+      create: {
+        personId: currentPerson.id,
+        groupId: targetGroup.id,
+        isAdmin: false
+      },
+      update: {}, // No changes if already exists
+      include: {
+        person: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            displayId: true,
+            pronouns: true,
+            imageURL: true,
+            userId: true,
+            createdAt: true,
+            updatedAt: true
+          }
+        },
+        group: {
+          select: {
+            id: true,
+            displayId: true,
+            name: true,
+            description: true,
+            createdAt: true,
+            updatedAt: true
+          }
+        }
+      }
+    });
+
+    const response: ApiResponse<PersonGroup> = {
+      success: true,
+      data: personGroup as any,
+      message: `Successfully joined ${targetGroup.name}`
+    };
+
+    res.status(201).json(response);
+  } catch (error: any) {
+    if (error.code === 'P2002') {
+      throw createError(400, 'You are already a member of this group');
+    }
+    throw error;
+  }
+}));
+
+// POST /api/groups/:displayId/leave - Leave a group
+router.post('/:displayId/leave', requireAuth, validateDisplayIdParam, canLeaveGroup, asyncHandler(async (req, res) => {
+  const membership = (req as any).membership;
+
+  // Use transaction to prevent race condition where multiple admins could leave simultaneously
+  await prisma.$transaction(async (tx) => {
+    // Re-check admin count inside transaction
+    if (membership.isAdmin) {
+      const adminCount = await tx.personGroup.count({
+        where: {
+          groupId: membership.groupId,
+          isAdmin: true
+        }
+      });
+
+      if (adminCount <= 1) {
+        throw createError(400, 'Cannot leave group: You are the last administrator. Please assign another administrator before leaving.');
+      }
+    }
+
+    // Delete the PersonGroup relationship
+    await tx.personGroup.delete({
+      where: { id: membership.id }
+    });
+  });
+
+  const response: ApiResponse<null> = {
+    success: true,
+    message: 'Successfully left the group'
   };
 
   res.json(response);

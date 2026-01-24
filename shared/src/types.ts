@@ -86,6 +86,7 @@ export interface Group {
   description: string | null;
   parentGroupId: number | null;
   allowsAnyUserToCreateSubgroup: boolean;
+  allowsJoins: boolean;
   publiclyVisible: boolean;
   createdAt: string;
   updatedAt: string;
@@ -264,6 +265,7 @@ export interface CreateGroupRequest {
   parentGroupId?: number | null;
   parentGroupDisplayId?: string | null;
   allowsAnyUserToCreateSubgroup?: boolean;
+  allowsJoins?: boolean;
   publiclyVisible?: boolean;
 }
 
@@ -273,6 +275,7 @@ export interface UpdateGroupRequest {
   description?: string | null;
   parentGroupId?: number | null;
   allowsAnyUserToCreateSubgroup?: boolean;
+  allowsJoins?: boolean;
   publiclyVisible?: boolean;
 }
 

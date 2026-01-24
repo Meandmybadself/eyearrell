@@ -53,6 +53,18 @@ export class GroupDetailPage extends LitElement {
   @state()
   private canEdit = false;
 
+  @state()
+  private isMember = false;
+
+  @state()
+  private canJoin = false;
+
+  @state()
+  private isJoining = false;
+
+  @state()
+  private isLeaving = false;
+
   async connectedCallback() {
     super.connectedCallback();
 
@@ -100,12 +112,24 @@ export class GroupDetailPage extends LitElement {
 
         // Check if current user is an admin of this group
         const currentUser = selectCurrentUser(this.store.getState());
+        const currentState = this.store.getState();
+        const currentPersonId = currentState.auth.currentPersonId;
+
         if (currentUser) {
           // Find if any of the current user's persons are admins
           const userPersonIds = this.persons
             .filter(p => p.userId === currentUser.id)
             .map(p => p.id);
           this.canEdit = userPersonIds.some(id => this.adminPersonIds.includes(id));
+        }
+
+        // Check membership status for current person
+        if (currentPersonId) {
+          this.isMember = this.personGroups.some(pg => pg.personId === currentPersonId);
+          this.canJoin = this.group.allowsJoins && !this.isMember;
+        } else {
+          this.isMember = false;
+          this.canJoin = false;
         }
 
         if (this.persons.length > 0) {
@@ -156,6 +180,55 @@ export class GroupDetailPage extends LitElement {
   private handleBack() {
     window.history.pushState({}, '', '/groups');
     window.dispatchEvent(new PopStateEvent('popstate'));
+  }
+
+  private async handleJoin() {
+    if (!this.group) return;
+
+    this.isJoining = true;
+    try {
+      const response = await this.api.joinGroup(this.group.displayId);
+      if (response.success) {
+        this.store.dispatch(
+          addNotification(`Successfully joined ${this.group.name}`, 'success')
+        );
+        // Reload group to update membership status
+        await this.loadGroup(this.group.displayId);
+      }
+    } catch (error) {
+      this.store.dispatch(
+        addNotification(`Failed to join group: ${error instanceof Error ? error.message : 'Unknown error'}`, 'error')
+      );
+    } finally {
+      this.isJoining = false;
+    }
+  }
+
+  private async handleLeave() {
+    if (!this.group) return;
+
+    // Confirm before leaving
+    if (!confirm(`Are you sure you want to leave ${this.group.name}?`)) {
+      return;
+    }
+
+    this.isLeaving = true;
+    try {
+      const response = await this.api.leaveGroup(this.group.displayId);
+      if (response.success) {
+        this.store.dispatch(
+          addNotification(response.message || 'Successfully left group', 'success')
+        );
+        // Reload group to update membership status
+        await this.loadGroup(this.group.displayId);
+      }
+    } catch (error) {
+      this.store.dispatch(
+        addNotification(`Failed to leave group: ${error instanceof Error ? error.message : 'Unknown error'}`, 'error')
+      );
+    } finally {
+      this.isLeaving = false;
+    }
   }
 
   render() {
@@ -226,6 +299,12 @@ export class GroupDetailPage extends LitElement {
                       ${this.group.allowsAnyUserToCreateSubgroup ? 'Open to any user' : 'Restricted'}
                     </dd>
                   </div>
+                  <div>
+                    <dt class="text-sm font-medium ${textColors.tertiary}">Join Policy</dt>
+                    <dd class="mt-1 text-sm ${textColors.primary}">
+                      ${this.group.allowsJoins ? 'Open to all users' : 'Invitation only'}
+                    </dd>
+                  </div>
                   ${this.parentGroup
                     ? html`
                         <div>
@@ -243,16 +322,46 @@ export class GroupDetailPage extends LitElement {
                   ></contact-info-display>
                 </div>
               </div>
-              ${this.canEdit
-                ? html`
-                    <button
-                      @click=${this.handleEdit}
-                      class="rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
-                    >
-                      Edit
-                    </button>
-                  `
-                : ''}
+              <div class="flex gap-2">
+                ${this.canJoin
+                  ? html`
+                      <button
+                        @click=${this.handleJoin}
+                        ?disabled=${this.isJoining}
+                        class="rounded-md bg-green-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-green-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-green-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        ${this.isJoining
+                          ? html`<span class="inline-block w-4 h-4 border-2 border-white border-r-transparent rounded-full animate-spin mr-2"></span>`
+                          : ''}
+                        Join Group
+                      </button>
+                    `
+                  : ''}
+                ${this.isMember && !this.canEdit
+                  ? html`
+                      <button
+                        @click=${this.handleLeave}
+                        ?disabled=${this.isLeaving}
+                        class="rounded-md bg-red-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-red-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        ${this.isLeaving
+                          ? html`<span class="inline-block w-4 h-4 border-2 border-white border-r-transparent rounded-full animate-spin mr-2"></span>`
+                          : ''}
+                        Leave Group
+                      </button>
+                    `
+                  : ''}
+                ${this.canEdit
+                  ? html`
+                      <button
+                        @click=${this.handleEdit}
+                        class="rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
+                      >
+                        Edit
+                      </button>
+                    `
+                  : ''}
+              </div>
             </div>
           </div>
 
