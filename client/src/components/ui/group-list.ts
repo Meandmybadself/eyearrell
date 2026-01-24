@@ -234,9 +234,9 @@ export class GroupList extends BaseList<Group> {
 
     return html`
       <tr class="${rowClasses}" @click=${onClick}>
-        <td class="py-3 pr-8 pl-8 text-sm ${textStyles.table.cellPrimary} max-w-xs">
-          <div class="flex items-center gap-2">
-            <span class="font-semibold">${group.name}</span>
+        <td class="py-3 pr-3 pl-3 md:pr-8 md:pl-8 text-sm ${textStyles.table.cellPrimary} max-w-xs">
+          <div class="flex items-center gap-2 flex-wrap">
+            <span class="font-semibold truncate">${group.name}</span>
             ${this.showAdmin && isAdmin
               ? html`
                   <span class="inline-flex items-center rounded-md bg-indigo-100 px-2 py-0.5 text-xs font-medium text-indigo-800 dark:bg-indigo-500/20 dark:text-indigo-300">
@@ -245,17 +245,23 @@ export class GroupList extends BaseList<Group> {
                 `
               : ''}
           </div>
+          <!-- Show contacts inline on mobile when contacts column is enabled -->
+          ${this.showContacts ? html`
+            <div class="md:hidden mt-1">
+              ${this.renderContactColumn(group.id)}
+            </div>
+          ` : ''}
         </td>
         ${this.showContacts
           ? html`
-              <td class="px-8 py-3 text-sm ${textStyles.table.cellSecondary}">
+              <td class="hidden md:table-cell px-3 md:px-8 py-3 text-sm ${textStyles.table.cellSecondary}">
                 ${this.renderContactColumn(group.id)}
               </td>
             `
           : ''}
         ${this.showEdit
           ? html`
-              <td class="py-3 pr-8 pl-8 text-right text-sm font-medium whitespace-nowrap">
+              <td class="hidden md:table-cell py-3 pr-3 pl-3 md:pr-8 md:pl-8 text-right text-sm font-medium whitespace-nowrap">
                 <button
                   @click=${(e: Event) => this.handleEditGroup(e, group.displayId)}
                   class="text-indigo-600 hover:text-indigo-500 bg-transparent border-none cursor-pointer dark:text-indigo-400 dark:hover:text-indigo-300"
@@ -275,7 +281,7 @@ export class GroupList extends BaseList<Group> {
     }
 
     return html`
-      <thead>
+      <thead class="hidden md:table-header-group">
         <tr>
           ${this.renderSortableHeader('name', 'Name', true)}
           ${this.showContacts
@@ -285,7 +291,7 @@ export class GroupList extends BaseList<Group> {
             : ''}
           ${this.showEdit
             ? html`
-                <th scope="col" class="py-3.5 pr-8 pl-8 text-right ${textStyles.table.header}">
+                <th scope="col" class="py-3.5 pr-3 pl-3 md:pr-8 md:pl-8 text-right ${textStyles.table.header}">
                   <span class="sr-only">Edit</span>
                 </th>
               `

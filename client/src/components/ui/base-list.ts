@@ -296,7 +296,7 @@ export abstract class BaseList<T> extends LitElement {
     const column = this.getColumns().find(col => col.id === columnId);
     if (!column || !sortable) {
       return html`
-        <th scope="col" class="py-3.5 pr-8 pl-8 text-left ${textStyles.table.header}">
+        <th scope="col" class="py-3.5 pr-3 pl-3 md:pr-8 md:pl-8 text-left ${textStyles.table.header}">
           ${label}
         </th>
       `;
@@ -318,7 +318,7 @@ export abstract class BaseList<T> extends LitElement {
     return html`
       <th
         scope="col"
-        class="py-3.5 pr-8 pl-8 text-left ${textStyles.table.header} cursor-pointer select-none hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+        class="py-3.5 pr-3 pl-3 md:pr-8 md:pl-8 text-left ${textStyles.table.header} cursor-pointer select-none hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
         @click=${() => this.handleSort(columnId)}
       >
         <div class="flex items-center">
