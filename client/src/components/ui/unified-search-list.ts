@@ -449,7 +449,7 @@ export class UnifiedSearchList extends BaseList<SearchItem> {
 
     return html`
       <tr class="${rowClasses}" @click=${() => this.handleItemClick(item)}>
-        <td class="py-3 pr-8 pl-8 text-sm ${textStyles.table.cellPrimary}">
+        <td class="py-3 pr-3 pl-3 md:pr-8 md:pl-8 text-sm ${textStyles.table.cellPrimary}">
           <div class="flex items-center">
             <div class="size-8 shrink-0">
               ${person.imageURL
@@ -468,17 +468,21 @@ export class UnifiedSearchList extends BaseList<SearchItem> {
                     </div>
                   `}
             </div>
-            <div class="ml-4">
-              <div class="font-medium ${textStyles.table.cellPrimary} flex items-center gap-2">
-                <span>${person.firstName} ${person.lastName}</span>
+            <div class="ml-3 md:ml-4 min-w-0">
+              <div class="font-medium ${textStyles.table.cellPrimary} flex items-center gap-2 flex-wrap">
+                <span class="truncate">${person.firstName} ${person.lastName}</span>
                 <span class="inline-flex items-center rounded-md bg-blue-100 p-1 text-blue-800 dark:bg-blue-500/20 dark:text-blue-300">
                   ${renderIcon('User', 'w-3 h-3')}
                 </span>
               </div>
+              <!-- Show contacts inline on mobile -->
+              <div class="md:hidden mt-1">
+                ${this.renderContactColumn(item)}
+              </div>
             </div>
           </div>
         </td>
-        <td class="px-8 py-3 text-sm ${textStyles.table.cellSecondary}">
+        <td class="hidden md:table-cell px-3 md:px-8 py-3 text-sm ${textStyles.table.cellSecondary}">
           ${this.renderContactColumn(item)}
         </td>
       </tr>
@@ -491,24 +495,28 @@ export class UnifiedSearchList extends BaseList<SearchItem> {
 
     return html`
       <tr class="${rowClasses}" @click=${() => this.handleItemClick(item)}>
-        <td class="py-3 pr-8 pl-8 text-sm ${textStyles.table.cellPrimary}">
+        <td class="py-3 pr-3 pl-3 md:pr-8 md:pl-8 text-sm ${textStyles.table.cellPrimary}">
           <div class="flex items-center">
             <div class="size-8 shrink-0">
               <div class="size-8 rounded-full bg-green-600 flex items-center justify-center ${textStyles.button.primary} font-medium text-xs">
                 📂
               </div>
             </div>
-            <div class="ml-4">
-              <div class="font-medium ${textStyles.table.cellPrimary} flex items-center gap-2">
-                <span>${group.name}</span>
+            <div class="ml-3 md:ml-4 min-w-0">
+              <div class="font-medium ${textStyles.table.cellPrimary} flex items-center gap-2 flex-wrap">
+                <span class="truncate">${group.name}</span>
                 <span class="inline-flex items-center rounded-md bg-green-100 p-1 text-green-800 dark:bg-green-500/20 dark:text-green-300">
                   ${renderIcon('Users', 'w-3 h-3')}
                 </span>
               </div>
+              <!-- Show contacts inline on mobile -->
+              <div class="md:hidden mt-1">
+                ${this.renderContactColumn(item)}
+              </div>
             </div>
           </div>
         </td>
-        <td class="px-8 py-3 text-sm ${textStyles.table.cellSecondary}">
+        <td class="hidden md:table-cell px-3 md:px-8 py-3 text-sm ${textStyles.table.cellSecondary}">
           ${this.renderContactColumn(item)}
         </td>
       </tr>
@@ -521,7 +529,7 @@ export class UnifiedSearchList extends BaseList<SearchItem> {
     }
 
     return html`
-      <thead>
+      <thead class="hidden md:table-header-group">
         <tr>
           ${this.renderSortableHeader('name', 'Name', true)}
           ${this.renderSortableHeader('contact', 'Contact Information', false)}

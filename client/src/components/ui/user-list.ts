@@ -106,9 +106,9 @@ export class UserList extends BaseList<UserWithMetadata> {
     return html`
       <tr class="${backgroundColors.content}">
         <!-- Email -->
-        <td class="py-3 pr-8 pl-8 text-sm ${textStyles.table.cellPrimary}">
-          <div class="flex items-center gap-2">
-            <span class="font-medium">${user.email}</span>
+        <td class="py-3 pr-3 pl-3 md:pr-8 md:pl-8 text-sm ${textStyles.table.cellPrimary}">
+          <div class="flex items-center gap-2 flex-wrap">
+            <span class="font-medium truncate max-w-[200px] md:max-w-none">${user.email}</span>
             ${isCurrentUser
               ? html`
                   <span class="inline-flex items-center rounded-md bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-800 dark:bg-blue-500/20 dark:text-blue-300">
@@ -117,10 +117,42 @@ export class UserList extends BaseList<UserWithMetadata> {
                 `
               : ''}
           </div>
+          <!-- Mobile-only inline details -->
+          <div class="md:hidden mt-1 flex flex-wrap gap-2 text-xs">
+            ${user.isSystemAdmin
+              ? html`
+                  <span class="inline-flex items-center gap-1 ${textColors.primary}">
+                    ${renderIcon('Shield', 'w-3 h-3')}
+                    <span>Admin</span>
+                  </span>
+                `
+              : ''}
+            ${user.isEmailVerified
+              ? html`
+                  <span class="inline-flex items-center gap-1 text-green-600 dark:text-green-400">
+                    ${renderIcon('CheckCircle', 'w-3 h-3')}
+                    <span>Verified</span>
+                  </span>
+                `
+              : html`
+                  <span class="inline-flex items-center gap-1 text-yellow-600 dark:text-yellow-400">
+                    ${renderIcon('Clock', 'w-3 h-3')}
+                    <span>Pending</span>
+                  </span>
+                `}
+            ${user.personCount > 0
+              ? html`
+                  <span class="inline-flex items-center gap-1 opacity-70">
+                    ${renderIcon('Users', 'w-3 h-3')}
+                    <span>${user.personCount}</span>
+                  </span>
+                `
+              : ''}
+          </div>
         </td>
 
-        <!-- Admin Status -->
-        <td class="py-3 pr-8 pl-8 text-sm ${textStyles.table.cellSecondary}">
+        <!-- Admin Status - hidden on mobile -->
+        <td class="hidden md:table-cell py-3 pr-3 pl-3 md:pr-8 md:pl-8 text-sm ${textStyles.table.cellSecondary}">
           ${user.isSystemAdmin
             ? html`
                 <span class="inline-flex items-center gap-1 ${textColors.primary}">
@@ -131,8 +163,8 @@ export class UserList extends BaseList<UserWithMetadata> {
             : html`<span class="opacity-50">No</span>`}
         </td>
 
-        <!-- Person Count -->
-        <td class="py-3 pr-8 pl-8 text-sm ${textStyles.table.cellSecondary} text-center">
+        <!-- Person Count - hidden on mobile -->
+        <td class="hidden lg:table-cell py-3 pr-3 pl-3 md:pr-8 md:pl-8 text-sm ${textStyles.table.cellSecondary} text-center">
           ${user.personCount > 0
             ? html`
                 <span class="inline-flex items-center gap-1">
@@ -143,13 +175,13 @@ export class UserList extends BaseList<UserWithMetadata> {
             : html`<span class="opacity-50">0</span>`}
         </td>
 
-        <!-- Created Date -->
-        <td class="py-3 pr-8 pl-8 text-sm ${textStyles.table.cellSecondary}">
+        <!-- Created Date - hidden on mobile -->
+        <td class="hidden lg:table-cell py-3 pr-3 pl-3 md:pr-8 md:pl-8 text-sm ${textStyles.table.cellSecondary}">
           ${this.formatDate(user.createdAt)}
         </td>
 
-        <!-- Verification Status -->
-        <td class="py-3 pr-8 pl-8 text-sm ${textStyles.table.cellSecondary}">
+        <!-- Verification Status - hidden on mobile -->
+        <td class="hidden md:table-cell py-3 pr-3 pl-3 md:pr-8 md:pl-8 text-sm ${textStyles.table.cellSecondary}">
           ${user.isEmailVerified
             ? html`
                 <span class="inline-flex items-center gap-1 text-green-600 dark:text-green-400">
@@ -168,10 +200,10 @@ export class UserList extends BaseList<UserWithMetadata> {
         <!-- Actions -->
         ${this.showActions
           ? html`
-              <td class="py-3 pr-8 pl-8 text-right text-sm font-medium whitespace-nowrap">
+              <td class="py-3 pr-3 pl-3 md:pr-8 md:pl-8 text-right text-sm font-medium whitespace-nowrap">
                 <button
                   @click=${(e: Event) => this.handleEditUser(e, user.id)}
-                  class="${textColors.link} ${textColors.linkHover} bg-transparent border-none cursor-pointer mr-3"
+                  class="${textColors.link} ${textColors.linkHover} bg-transparent border-none cursor-pointer mr-2 md:mr-3"
                 >
                   Edit
                 </button>
@@ -201,13 +233,21 @@ export class UserList extends BaseList<UserWithMetadata> {
       <thead>
         <tr>
           ${this.renderSortableHeader('email', 'Email', true)}
-          ${this.renderSortableHeader('admin', 'Admin', true)}
-          ${this.renderSortableHeader('persons', 'Persons', true)}
-          ${this.renderSortableHeader('created', 'Created', true)}
-          ${this.renderSortableHeader('verified', 'Verified', true)}
+          <th scope="col" class="hidden md:table-cell py-3.5 pr-3 pl-3 md:pr-8 md:pl-8 text-left ${textStyles.table.header}">
+            Admin
+          </th>
+          <th scope="col" class="hidden lg:table-cell py-3.5 pr-3 pl-3 md:pr-8 md:pl-8 text-center ${textStyles.table.header}">
+            Persons
+          </th>
+          <th scope="col" class="hidden lg:table-cell py-3.5 pr-3 pl-3 md:pr-8 md:pl-8 text-left ${textStyles.table.header}">
+            Created
+          </th>
+          <th scope="col" class="hidden md:table-cell py-3.5 pr-3 pl-3 md:pr-8 md:pl-8 text-left ${textStyles.table.header}">
+            Verified
+          </th>
           ${this.showActions
             ? html`
-                <th scope="col" class="py-3.5 pr-8 pl-8 text-right ${textStyles.table.header}">
+                <th scope="col" class="py-3.5 pr-3 pl-3 md:pr-8 md:pl-8 text-right ${textStyles.table.header}">
                   Actions
                 </th>
               `

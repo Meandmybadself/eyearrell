@@ -238,7 +238,7 @@ export class PersonList extends BaseList<Person> {
 
     return html`
       <tr class="${rowClasses}" @click=${onClick}>
-        <td class="py-3 pr-8 pl-8 text-sm ${textStyles.table.cellPrimary}">
+        <td class="py-3 pr-3 pl-3 md:pr-8 md:pl-8 text-sm ${textStyles.table.cellPrimary}">
           <div class="flex items-center">
             <div class="size-8 shrink-0">
               ${person.imageURL
@@ -257,9 +257,9 @@ export class PersonList extends BaseList<Person> {
                     </div>
                   `}
             </div>
-            <div class="ml-4">
-              <div class="font-medium ${textStyles.table.cellPrimary} flex items-center gap-2">
-                <span>${person.firstName} ${person.lastName}</span>
+            <div class="ml-3 md:ml-4 min-w-0">
+              <div class="font-medium ${textStyles.table.cellPrimary} flex items-center gap-2 flex-wrap">
+                <span class="truncate">${person.firstName} ${person.lastName}</span>
                 ${this.showAdmin && isAdmin
                   ? html`
                       <span class="inline-flex items-center rounded-md bg-indigo-100 px-2 py-0.5 text-xs font-medium text-indigo-800 dark:bg-indigo-500/20 dark:text-indigo-300">
@@ -268,19 +268,25 @@ export class PersonList extends BaseList<Person> {
                     `
                   : ''}
               </div>
+              <!-- Show contacts inline on mobile when not showing contacts column -->
+              ${!this.showContacts ? '' : html`
+                <div class="md:hidden mt-1">
+                  ${this.renderContactColumn(person.id)}
+                </div>
+              `}
             </div>
           </div>
         </td>
         ${this.showContacts
           ? html`
-              <td class="px-8 py-3 text-sm ${textStyles.table.cellSecondary}">
+              <td class="hidden md:table-cell px-3 md:px-8 py-3 text-sm ${textStyles.table.cellSecondary}">
                 ${this.renderContactColumn(person.id)}
               </td>
             `
           : ''}
         ${this.showEdit
           ? html`
-              <td class="py-3 pr-8 pl-8 text-right text-sm font-medium whitespace-nowrap">
+              <td class="hidden md:table-cell py-3 pr-3 pl-3 md:pr-8 md:pl-8 text-right text-sm font-medium whitespace-nowrap">
                 <button
                   @click=${(e: Event) => this.handleEditPerson(e, person.displayId)}
                   class="${textColors.link} ${textColors.linkHover} bg-transparent border-none cursor-pointer"
@@ -300,7 +306,7 @@ export class PersonList extends BaseList<Person> {
     }
 
     return html`
-      <thead>
+      <thead class="hidden md:table-header-group">
         <tr>
           ${this.renderSortableHeader('name', 'Name', true)}
           ${this.showContacts
@@ -310,7 +316,7 @@ export class PersonList extends BaseList<Person> {
             : ''}
           ${this.showEdit
             ? html`
-                <th scope="col" class="py-3.5 pr-8 pl-8 text-right ${textStyles.table.header}">
+                <th scope="col" class="py-3.5 pr-3 pl-3 md:pr-8 md:pl-8 text-right ${textStyles.table.header}">
                   <span class="sr-only">Edit</span>
                 </th>
               `
