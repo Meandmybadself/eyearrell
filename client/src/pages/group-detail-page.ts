@@ -290,10 +290,6 @@ export class GroupDetailPage extends LitElement {
                   : ''}
                 <dl class="mt-4 grid grid-cols-1 gap-x-4 gap-y-3 sm:grid-cols-2">
                   <div>
-                    <dt class="text-sm font-medium ${textColors.tertiary}">Display ID</dt>
-                    <dd class="mt-1 text-sm ${textColors.primary}">${this.group.displayId}</dd>
-                  </div>
-                  <div>
                     <dt class="text-sm font-medium ${textColors.tertiary}">Subgroup Creation</dt>
                     <dd class="mt-1 text-sm ${textColors.primary}">
                       ${this.group.allowsAnyUserToCreateSubgroup ? 'Open to any user' : 'Restricted'}
