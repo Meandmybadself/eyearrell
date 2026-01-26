@@ -102,3 +102,12 @@ export const selectNotifications = createSelector(
   [selectUI],
   ui => ui.notifications
 );
+
+// Onboarding selectors
+export const selectNeedsPersonOnboarding = createSelector(
+  [selectIsAuthenticated, selectCurrentPersonId, selectIsSystemAdmin],
+  (isAuthenticated, personId, isSystemAdmin) => {
+    // User needs onboarding if: authenticated, has no person, and is not a system admin
+    return isAuthenticated && personId === null && !isSystemAdmin;
+  }
+);
