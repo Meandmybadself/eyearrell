@@ -4,6 +4,7 @@ import { consume } from '@lit-labs/context';
 import { storeContext } from '../contexts/store-context.js';
 import { apiContext } from '../contexts/api-context.js';
 import { addNotification } from '../store/slices/ui.js';
+import { checkSession } from '../store/slices/auth.js';
 import { selectCurrentUser } from '../store/selectors.js';
 import { toDisplayId } from '../utilities/string.js';
 import { textColors, backgroundColors, pageStyles, contentStateStyles } from '../utilities/design-tokens.js';
@@ -238,6 +239,11 @@ export class PersonFormPage extends LitElement {
             `Person ${this.personDisplayId ? 'updated' : 'created'} successfully`,
             'success'
           ));
+        }
+
+        // If this was a new person creation, refresh the session to update currentPersonId
+        if (!this.personDisplayId) {
+          await this.store.dispatch(checkSession());
         }
 
         // Navigate to person detail page

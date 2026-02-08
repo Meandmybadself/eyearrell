@@ -11,7 +11,7 @@ import { storeContext } from './contexts/store-context.js';
 import { apiContext } from './contexts/api-context.js';
 import { createRoutes } from './router.js';
 import { updateDocumentTitle, getPageNameFromPath } from './utilities/title.js';
-import { selectSystemName, selectIsAuthenticated } from './store/selectors.js';
+import { selectSystemName, selectIsAuthenticated, selectNeedsPersonOnboarding } from './store/selectors.js';
 import './components/ui/notification.js';
 import './components/layout/navigation.js';
 import './components/layout/masquerade-banner.js';
@@ -140,12 +140,17 @@ export class AppRoot extends LitElement {
 
   private shouldShowNavigation(): boolean {
     const path = window.location.pathname;
-    // Don't show navigation on login, register, or verify-email pages
+    const state = this.store.getState();
+    const needsOnboarding = selectNeedsPersonOnboarding(state);
+
+    // Don't show navigation on login, register, verify-email pages, or during onboarding
     return this.isAuthenticated &&
+           !needsOnboarding &&
            path !== '/login' &&
            path !== '/register' &&
            path !== '/verify-email' &&
-           path !== '/verify-email-change';
+           path !== '/verify-email-change' &&
+           path !== '/onboarding';
   }
 
   render() {

@@ -1,6 +1,6 @@
 import { html, type TemplateResult } from 'lit';
 import type { AppStore } from './store/index.js';
-import { selectIsAuthenticated } from './store/selectors.js';
+import { selectIsAuthenticated, selectNeedsPersonOnboarding } from './store/selectors.js';
 import { setAttemptedPath } from './store/slices/auth.js';
 
 // Import pages
@@ -22,11 +22,26 @@ import './pages/groups-page.js';
 import './pages/achievements-page.js';
 import './pages/invite-page.js';
 import './pages/admin-interests-page.js';
+import './pages/onboarding-page.js';
 
 export interface RouteConfig {
   path: string;
   render: () => TemplateResult;
 }
+
+// Helper to check if user needs onboarding and render onboarding page if so
+const checkOnboarding = (store: AppStore, requestedPath: string): TemplateResult | null => {
+  const state = store.getState();
+  const needsOnboarding = selectNeedsPersonOnboarding(state);
+
+  if (needsOnboarding) {
+    // Store the path they were trying to access
+    store.dispatch(setAttemptedPath(requestedPath));
+    return html`<onboarding-page></onboarding-page>`;
+  }
+
+  return null;
+};
 
 export const createRoutes = (store: AppStore): RouteConfig[] => {
   return [
@@ -38,6 +53,10 @@ export const createRoutes = (store: AppStore): RouteConfig[] => {
         const isAuthenticated = selectIsAuthenticated(state);
 
         if (isAuthenticated) {
+          // Check if user needs to complete onboarding
+          const onboarding = checkOnboarding(store, '/');
+          if (onboarding) return onboarding;
+
           return html`<home-page></home-page>`;
         }
         return html`<login-page></login-page>`;
@@ -80,6 +99,19 @@ export const createRoutes = (store: AppStore): RouteConfig[] => {
       }
     },
     {
+      path: '/onboarding',
+      render: () => {
+        const state = store.getState();
+        const isAuthenticated = selectIsAuthenticated(state);
+
+        if (!isAuthenticated) {
+          return html`<login-page></login-page>`;
+        }
+
+        return html`<onboarding-page></onboarding-page>`;
+      }
+    },
+    {
       path: '/profile',
       render: () => {
         const state = store.getState();
@@ -89,6 +121,11 @@ export const createRoutes = (store: AppStore): RouteConfig[] => {
           store.dispatch(setAttemptedPath('/profile'));
           return html`<login-page></login-page>`;
         }
+
+        // Check if user needs to complete onboarding
+        const onboarding = checkOnboarding(store, '/profile');
+        if (onboarding) return onboarding;
+
         return html`<profile-page></profile-page>`;
       }
     },
@@ -103,6 +140,11 @@ export const createRoutes = (store: AppStore): RouteConfig[] => {
           store.dispatch(setAttemptedPath('/home'));
           return html`<login-page></login-page>`;
         }
+
+        // Check if user needs to complete onboarding
+        const onboarding = checkOnboarding(store, '/home');
+        if (onboarding) return onboarding;
+
         return html`<home-page></home-page>`;
       }
     },
@@ -116,6 +158,11 @@ export const createRoutes = (store: AppStore): RouteConfig[] => {
           store.dispatch(setAttemptedPath('/admin/system'));
           return html`<login-page></login-page>`;
         }
+
+        // Check if user needs to complete onboarding
+        const onboarding = checkOnboarding(store, '/admin/system');
+        if (onboarding) return onboarding;
+
         return html`<system-admin-page></system-admin-page>`;
       }
     },
@@ -129,6 +176,11 @@ export const createRoutes = (store: AppStore): RouteConfig[] => {
           store.dispatch(setAttemptedPath('/admin/logs'));
           return html`<login-page></login-page>`;
         }
+
+        // Check if user needs to complete onboarding
+        const onboarding = checkOnboarding(store, '/admin/logs');
+        if (onboarding) return onboarding;
+
         return html`<audit-logs-page></audit-logs-page>`;
       }
     },
@@ -142,6 +194,11 @@ export const createRoutes = (store: AppStore): RouteConfig[] => {
           store.dispatch(setAttemptedPath('/admin/users'));
           return html`<login-page></login-page>`;
         }
+
+        // Check if user needs to complete onboarding
+        const onboarding = checkOnboarding(store, '/admin/users');
+        if (onboarding) return onboarding;
+
         return html`<admin-users-page></admin-users-page>`;
       }
     },
@@ -155,6 +212,11 @@ export const createRoutes = (store: AppStore): RouteConfig[] => {
           store.dispatch(setAttemptedPath('/admin/interests'));
           return html`<login-page></login-page>`;
         }
+
+        // Check if user needs to complete onboarding
+        const onboarding = checkOnboarding(store, '/admin/interests');
+        if (onboarding) return onboarding;
+
         return html`<admin-interests-page></admin-interests-page>`;
       }
     },
@@ -168,6 +230,11 @@ export const createRoutes = (store: AppStore): RouteConfig[] => {
           store.dispatch(setAttemptedPath('/persons'));
           return html`<login-page></login-page>`;
         }
+
+        // Check if user needs to complete onboarding
+        const onboarding = checkOnboarding(store, '/persons');
+        if (onboarding) return onboarding;
+
         return html`<persons-page></persons-page>`;
       }
     },
@@ -181,6 +248,11 @@ export const createRoutes = (store: AppStore): RouteConfig[] => {
           store.dispatch(setAttemptedPath('/persons/me'));
           return html`<login-page></login-page>`;
         }
+
+        // Check if user needs to complete onboarding
+        const onboarding = checkOnboarding(store, '/persons/me');
+        if (onboarding) return onboarding;
+
         return html`<person-detail-page></person-detail-page>`;
       }
     },
@@ -207,6 +279,11 @@ export const createRoutes = (store: AppStore): RouteConfig[] => {
           store.dispatch(setAttemptedPath(window.location.pathname));
           return html`<login-page></login-page>`;
         }
+
+        // Check if user needs to complete onboarding
+        const onboarding = checkOnboarding(store, window.location.pathname);
+        if (onboarding) return onboarding;
+
         return html`<person-form-page></person-form-page>`;
       }
     },
@@ -220,6 +297,11 @@ export const createRoutes = (store: AppStore): RouteConfig[] => {
           store.dispatch(setAttemptedPath(window.location.pathname));
           return html`<login-page></login-page>`;
         }
+
+        // Check if user needs to complete onboarding
+        const onboarding = checkOnboarding(store, window.location.pathname);
+        if (onboarding) return onboarding;
+
         return html`<person-detail-page></person-detail-page>`;
       }
     },
@@ -233,6 +315,11 @@ export const createRoutes = (store: AppStore): RouteConfig[] => {
           store.dispatch(setAttemptedPath('/groups'));
           return html`<login-page></login-page>`;
         }
+
+        // Check if user needs to complete onboarding
+        const onboarding = checkOnboarding(store, '/groups');
+        if (onboarding) return onboarding;
+
         return html`<groups-page></groups-page>`;
       }
     },
@@ -246,6 +333,11 @@ export const createRoutes = (store: AppStore): RouteConfig[] => {
           store.dispatch(setAttemptedPath('/groups/create'));
           return html`<login-page></login-page>`;
         }
+
+        // Check if user needs to complete onboarding
+        const onboarding = checkOnboarding(store, '/groups/create');
+        if (onboarding) return onboarding;
+
         return html`<group-form-page></group-form-page>`;
       }
     },
@@ -259,6 +351,11 @@ export const createRoutes = (store: AppStore): RouteConfig[] => {
           store.dispatch(setAttemptedPath(window.location.pathname));
           return html`<login-page></login-page>`;
         }
+
+        // Check if user needs to complete onboarding
+        const onboarding = checkOnboarding(store, window.location.pathname);
+        if (onboarding) return onboarding;
+
         return html`<group-form-page></group-form-page>`;
       }
     },
@@ -272,6 +369,11 @@ export const createRoutes = (store: AppStore): RouteConfig[] => {
           store.dispatch(setAttemptedPath(window.location.pathname));
           return html`<login-page></login-page>`;
         }
+
+        // Check if user needs to complete onboarding
+        const onboarding = checkOnboarding(store, window.location.pathname);
+        if (onboarding) return onboarding;
+
         return html`<group-detail-page></group-detail-page>`;
       }
     },
@@ -285,6 +387,11 @@ export const createRoutes = (store: AppStore): RouteConfig[] => {
           store.dispatch(setAttemptedPath('/invite'));
           return html`<login-page></login-page>`;
         }
+
+        // Check if user needs to complete onboarding
+        const onboarding = checkOnboarding(store, '/invite');
+        if (onboarding) return onboarding;
+
         return html`<invite-page></invite-page>`;
       }
     },
@@ -298,6 +405,11 @@ export const createRoutes = (store: AppStore): RouteConfig[] => {
           store.dispatch(setAttemptedPath('/achievements'));
           return html`<login-page></login-page>`;
         }
+
+        // Check if user needs to complete onboarding
+        const onboarding = checkOnboarding(store, '/achievements');
+        if (onboarding) return onboarding;
+
         return html`<achievements-page></achievements-page>`;
       }
     },
