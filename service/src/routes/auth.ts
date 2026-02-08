@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import passport from 'passport';
 import { prisma } from '../lib/prisma.js';
+import { sendVerificationEmail } from '../lib/email.js';
 import { asyncHandler, createError } from '../middleware/error-handler.js';
 import { validateBody, loginSchema, resendVerificationSchema } from '../middleware/validation.js';
 import type { ApiResponse, User, Person } from '@irl/shared';
@@ -217,8 +218,11 @@ router.post('/resend-verification', validateBody(resendVerificationSchema), asyn
     return;
   }
 
-  // In a real implementation, resend the verification email here
-  // await sendVerificationEmail(user.email, user.verificationToken);
+  try {
+    await sendVerificationEmail(user.email, user.verificationToken);
+  } catch (error) {
+    console.error('Failed to resend verification email:', error);
+  }
 
   const response: ApiResponse<null> = {
     success: true,

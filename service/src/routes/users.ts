@@ -53,8 +53,11 @@ const updateUserRecord = async (id: number, body: any): Promise<UpdatedUserResul
   }
 
   if (typeof userData.email === 'string' && userData.email !== existingUser.email) {
-    verificationToken = crypto.randomBytes(32).toString('hex');
-    updateData.verificationToken = verificationToken;
+    const emailVerificationEnabled = process.env.EMAIL_VERIFICATION_ENABLED?.toLowerCase() !== 'false';
+    if (emailVerificationEnabled) {
+      verificationToken = crypto.randomBytes(32).toString('hex');
+      updateData.verificationToken = verificationToken;
+    }
   }
 
   const item = await prisma.user.update({
@@ -187,6 +190,24 @@ router.post('/me/email', requireAuth, validateBody(changeEmailSchema), asyncHand
   // Check if user already has the email
   if (user.email === newEmail) {
     throw createError(400, 'New email must be different from current email');
+  }
+
+  const emailVerificationEnabled = process.env.EMAIL_VERIFICATION_ENABLED?.toLowerCase() !== 'false';
+
+  if (!emailVerificationEnabled) {
+    // Skip verification — update email directly
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { email: newEmail }
+    });
+
+    const response: ApiResponse<null> = {
+      success: true,
+      message: 'Email address updated successfully'
+    };
+
+    res.json(response);
+    return;
   }
 
   // Delete any existing email change requests for this user
@@ -464,6 +485,8 @@ router.post('/', validateBody(userSchema), asyncHandler(async (req, res) => {
   const userCount = await prisma.user.count({ where: { deleted: false } });
   const isSystemAdmin = userCount === 0 ? true : Boolean(requestedAdmin);
   const isFirstUser = userCount === 0;
+  const emailVerificationEnabled = process.env.EMAIL_VERIFICATION_ENABLED?.toLowerCase() !== 'false';
+  const skipVerification = isFirstUser || !emailVerificationEnabled;
 
   // Check if registration is allowed (always allow first user for bootstrapping)
   if (!isFirstUser) {
@@ -480,13 +503,13 @@ router.post('/', validateBody(userSchema), asyncHandler(async (req, res) => {
     data: {
       ...userData,
       password: hashedPassword,
-      verificationToken: isFirstUser ? null : verificationToken,
+      verificationToken: skipVerification ? null : verificationToken,
       isSystemAdmin
     }
   });
 
-  // Only send verification email if this is not the first user
-  if (!isFirstUser) {
+  // Only send verification email when verification is enabled and not the first user
+  if (!skipVerification) {
     try {
       await sendVerificationEmail(item.email, verificationToken);
     } catch (error) {
@@ -497,7 +520,7 @@ router.post('/', validateBody(userSchema), asyncHandler(async (req, res) => {
   const response: ApiResponse<User> = {
     success: true,
     data: excludeSensitiveFields(item),
-    message: isFirstUser ? 'Account created successfully' : 'User created successfully'
+    message: skipVerification ? 'Account created successfully' : 'User created successfully'
   };
 
   res.status(201).json(response);

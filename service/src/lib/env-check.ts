@@ -9,18 +9,20 @@ interface EnvVar {
   description: string
 }
 
+const emailVerificationEnabled = process.env.EMAIL_VERIFICATION_ENABLED?.toLowerCase() !== 'false'
+
 const envVars: EnvVar[] = [
   // Required - Core
   { name: 'DATABASE_URL', required: true, description: 'PostgreSQL connection string' },
   { name: 'SESSION_SECRET', required: true, description: 'Secret for session encryption' },
   { name: 'CLIENT_URL', required: true, description: 'Frontend URL for CORS' },
 
-  // Required - AWS SES SMTP Email
-  { name: 'AWS_SES_SMTP_HOST', required: true, description: 'AWS SES SMTP host (e.g., email-smtp.us-east-2.amazonaws.com)' },
-  { name: 'AWS_SES_SMTP_USER', required: true, description: 'AWS SES SMTP username' },
-  { name: 'AWS_SES_SMTP_PASS', required: true, description: 'AWS SES SMTP password' },
-  { name: 'AWS_SES_FROM_EMAIL', required: true, description: 'From email address for SES (must be verified)' },
-  { name: 'AWS_SES_FROM_NAME', required: true, description: 'From name for SES emails' },
+  // AWS SES SMTP Email - required only when email verification is enabled
+  { name: 'AWS_SES_SMTP_HOST', required: emailVerificationEnabled, description: 'AWS SES SMTP host (e.g., email-smtp.us-east-2.amazonaws.com)' },
+  { name: 'AWS_SES_SMTP_USER', required: emailVerificationEnabled, description: 'AWS SES SMTP username' },
+  { name: 'AWS_SES_SMTP_PASS', required: emailVerificationEnabled, description: 'AWS SES SMTP password' },
+  { name: 'AWS_SES_FROM_EMAIL', required: emailVerificationEnabled, description: 'From email address for SES (must be verified)' },
+  { name: 'AWS_SES_FROM_NAME', required: emailVerificationEnabled, description: 'From name for SES emails' },
 
   // Required - Cloudinary
   { name: 'CLOUDINARY_CLOUD_NAME', required: true, description: 'Cloudinary cloud name' },
@@ -28,6 +30,7 @@ const envVars: EnvVar[] = [
   { name: 'CLOUDINARY_API_SECRET', required: true, description: 'Cloudinary API secret' },
 
   // Optional
+  { name: 'EMAIL_VERIFICATION_ENABLED', required: false, description: 'Enable email verification for new users (default: true)' },
   { name: 'SERVICE_PORT', required: false, description: 'Port for the service (default: 3001)' },
   { name: 'NODE_ENV', required: false, description: 'Environment mode (development/production/test)' },
 ]
