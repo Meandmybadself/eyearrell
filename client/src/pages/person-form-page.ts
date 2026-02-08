@@ -7,7 +7,15 @@ import { addNotification } from '../store/slices/ui.js';
 import { checkSession } from '../store/slices/auth.js';
 import { selectCurrentUser } from '../store/selectors.js';
 import { toDisplayId } from '../utilities/string.js';
-import { textColors, backgroundColors, pageStyles, contentStateStyles } from '../utilities/design-tokens.js';
+import {
+  textColors,
+  backgroundColors,
+  pageStyles,
+  contentStateStyles,
+  buttonStyles,
+  inputStyles,
+  cardStyles,
+} from '../utilities/design-tokens.js';
 import '../components/ui/contact-info-form.js';
 import '../components/ui/image-cropper-modal.js';
 import '../components/ui/interests-form.js';
@@ -15,6 +23,14 @@ import type { InterestsForm } from '../components/ui/interests-form.js';
 import type { AppStore } from '../store/index.js';
 import type { ApiClient } from '../services/api-client.js';
 import type { ContactInformation } from '@irl/shared';
+
+type EditTab = 'profile' | 'contact' | 'interests';
+
+const TABS: { key: EditTab; label: string }[] = [
+  { key: 'profile', label: 'Profile' },
+  { key: 'contact', label: 'Contact' },
+  { key: 'interests', label: 'Interests' },
+];
 
 @customElement('person-form-page')
 export class PersonFormPage extends LitElement {
@@ -78,6 +94,13 @@ export class PersonFormPage extends LitElement {
   @state()
   private isUploadingAvatar = false;
 
+  @state()
+  private activeTab: EditTab = 'profile';
+
+  private get isEditMode(): boolean {
+    return !!this.personDisplayId;
+  }
+
   async connectedCallback() {
     super.connectedCallback();
 
@@ -113,7 +136,7 @@ export class PersonFormPage extends LitElement {
         this.pronouns = person.pronouns || '';
         this.imageURL = person.imageURL || '';
 
-        // Load contact information using numeric ID
+        // Load contact information
         const contactsResponse = await this.api.getPersonContactInformations(person.displayId);
         if (contactsResponse.success && contactsResponse.data) {
           this.contactInformations = contactsResponse.data;
@@ -123,7 +146,6 @@ export class PersonFormPage extends LitElement {
       this.store.dispatch(
         addNotification(`Failed to load person: ${error instanceof Error ? error.message : 'Unknown error'}`, 'error')
       );
-      // Redirect back to persons list on error
       window.history.pushState({}, '', '/persons');
       window.dispatchEvent(new PopStateEvent('popstate'));
     } finally {
@@ -183,6 +205,10 @@ export class PersonFormPage extends LitElement {
     }
 
     if (this.firstNameError || this.lastNameError || this.displayIdError) {
+      // If we're in edit mode on a different tab, switch to profile tab to show errors
+      if (this.isEditMode && this.activeTab !== 'profile') {
+        this.activeTab = 'profile';
+      }
       return;
     }
 
@@ -223,7 +249,6 @@ export class PersonFormPage extends LitElement {
         if (interestsForm) {
           const interestsSaved = await interestsForm.saveInterests(savedDisplayId);
           if (!interestsSaved) {
-            // Interests failed but person was saved - show partial success
             this.store.dispatch(addNotification(
               `Person ${this.personDisplayId ? 'updated' : 'created'} but interests could not be saved. You can edit them later.`,
               'info'
@@ -260,7 +285,11 @@ export class PersonFormPage extends LitElement {
   }
 
   private handleCancel() {
-    window.history.pushState({}, '', '/persons');
+    if (this.personDisplayId) {
+      window.history.pushState({}, '', `/persons/${this.personDisplayId}`);
+    } else {
+      window.history.pushState({}, '', '/persons');
+    }
     window.dispatchEvent(new PopStateEvent('popstate'));
   }
 
@@ -344,20 +373,245 @@ export class PersonFormPage extends LitElement {
     }
   }
 
-  render() {
-    if (this.isLoading) {
-      return html`
-        <div class="${contentStateStyles.containerFullHeight}">
-          <div class="inline-block w-8 h-8 border-4 border-indigo-600 border-r-transparent rounded-full animate-spin"></div>
-        </div>
-      `;
-    }
+  // --- Tab rendering for edit mode ---
 
+  private renderTabs() {
+    return html`
+      <div class="border-b ${backgroundColors.border} mb-6">
+        <nav class="-mb-px flex space-x-8" aria-label="Tabs">
+          ${TABS.map(tab => html`
+            <button
+              type="button"
+              @click=${() => { this.activeTab = tab.key; }}
+              class="py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap transition-colors
+                ${this.activeTab === tab.key
+                  ? 'border-indigo-600 dark:border-indigo-400 text-indigo-600 dark:text-indigo-400'
+                  : 'border-transparent ' + textColors.tertiary + ' hover:border-gray-300 dark:hover:border-gray-600 hover:' + textColors.secondary}"
+            >
+              ${tab.label}
+            </button>
+          `)}
+        </nav>
+      </div>
+    `;
+  }
+
+  private renderProfileTab() {
+    return html`
+      <div class="space-y-6">
+        <div class="grid grid-cols-1 gap-x-6 gap-y-6 sm:grid-cols-2">
+          <div>
+            <label for="first-name" class="${inputStyles.label}">
+              First name
+            </label>
+            <input
+              id="first-name"
+              type="text"
+              name="firstName"
+              .value=${this.firstName}
+              required
+              autocomplete="given-name"
+              class="${inputStyles.base} ${this.firstNameError ? inputStyles.states.error : inputStyles.states.default}"
+              @input=${this.handleInputChange}
+              @blur=${this.handleFirstOrLastNameBlur}
+            />
+            ${this.firstNameError ? html`<p class="${inputStyles.errorText}">${this.firstNameError}</p>` : ''}
+          </div>
+
+          <div>
+            <label for="last-name" class="${inputStyles.label}">
+              Last name
+            </label>
+            <input
+              id="last-name"
+              type="text"
+              name="lastName"
+              .value=${this.lastName}
+              required
+              autocomplete="family-name"
+              class="${inputStyles.base} ${this.lastNameError ? inputStyles.states.error : inputStyles.states.default}"
+              @input=${this.handleInputChange}
+              @blur=${this.handleFirstOrLastNameBlur}
+            />
+            ${this.lastNameError ? html`<p class="${inputStyles.errorText}">${this.lastNameError}</p>` : ''}
+          </div>
+        </div>
+
+        <div>
+          <label for="display-id" class="${inputStyles.label}">
+            Display ID
+          </label>
+          <input
+            id="display-id"
+            type="text"
+            name="displayId"
+            .value=${this.displayId}
+            required
+            placeholder="john-doe"
+            class="${inputStyles.base} ${this.displayIdError ? inputStyles.states.error : inputStyles.states.default}"
+            @input=${this.handleInputChange}
+          />
+          <p class="${inputStyles.helperText}">
+            A unique, web-safe identifier for this person
+          </p>
+          ${this.displayIdError ? html`<p class="${inputStyles.errorText}">${this.displayIdError}</p>` : ''}
+        </div>
+
+        <div>
+          <label for="pronouns" class="${inputStyles.label}">
+            Pronouns (optional)
+          </label>
+          <input
+            id="pronouns"
+            type="text"
+            name="pronouns"
+            .value=${this.pronouns}
+            placeholder="he/him, she/her, they/them"
+            class="${inputStyles.base} ${inputStyles.states.default}"
+            @input=${this.handleInputChange}
+          />
+        </div>
+
+        ${this.personId ? html`
+          <div>
+            <label class="${inputStyles.label}">
+              Profile Photo
+            </label>
+            <div class="flex items-center gap-4">
+              ${this.imageURL ? html`
+                <img
+                  src=${this.imageURL}
+                  alt="Profile preview"
+                  class="w-20 h-20 rounded-full object-cover border-2 ${backgroundColors.border}"
+                />
+              ` : html`
+                <div class="w-20 h-20 rounded-full ${backgroundColors.pageAlt} flex items-center justify-center border-2 ${backgroundColors.border}">
+                  <span class="text-2xl ${textColors.tertiary}">?</span>
+                </div>
+              `}
+              <div>
+                <button
+                  type="button"
+                  @click=${this.handleUploadButtonClick}
+                  ?disabled=${this.isUploadingAvatar}
+                  class="${buttonStyles.base} ${buttonStyles.sizes.md} ${buttonStyles.variants.secondary} disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  ${this.isUploadingAvatar ? html`
+                    <span class="inline-block w-4 h-4 border-2 border-current border-r-transparent rounded-full animate-spin mr-2"></span>
+                    Uploading...
+                  ` : html`
+                    ${this.imageURL ? 'Change Photo' : 'Upload Photo'}
+                  `}
+                </button>
+                <input
+                  id="avatar-upload"
+                  type="file"
+                  accept=".jpg,.jpeg,.png,.webp"
+                  class="hidden"
+                  @change=${this.handleFileSelect}
+                  ?disabled=${this.isUploadingAvatar}
+                />
+                <p class="mt-1 text-xs ${textColors.tertiary}">
+                  JPG, PNG, or WebP. Max 5MB.
+                </p>
+              </div>
+            </div>
+          </div>
+        ` : ''}
+      </div>
+    `;
+  }
+
+  private renderContactTab() {
+    return html`
+      <contact-info-form
+        entityType="person"
+        .entityId=${this.personId!}
+        .contactInformations=${this.contactInformations}
+        @contact-info-changed=${(e: CustomEvent) => {
+          this.contactInformations = e.detail.items;
+        }}
+        @contact-error=${(e: CustomEvent) => {
+          this.store.dispatch(addNotification(e.detail.error, 'error'));
+        }}
+      ></contact-info-form>
+    `;
+  }
+
+  private renderInterestsTab() {
+    return html`
+      <interests-form
+        .personDisplayId=${this.personDisplayId || ''}
+        .hideSaveButton=${true}
+        @interest-error=${(e: CustomEvent) => {
+          this.store.dispatch(addNotification(e.detail.error, 'error'));
+        }}
+      ></interests-form>
+    `;
+  }
+
+  private renderEditMode() {
     return html`
       <div class="${pageStyles.container}">
         <div class="${pageStyles.content}">
           <h2 class="text-2xl/9 font-bold tracking-tight ${textColors.primary} mb-6">
-            ${this.personDisplayId ? 'Edit Person' : 'Create Person'}
+            Edit Person
+          </h2>
+
+          <div class="${cardStyles.base} ${cardStyles.padding.lg}">
+            <form @submit=${this.handleSubmit}>
+              ${this.renderTabs()}
+
+              <div class="${this.activeTab === 'profile' ? '' : 'hidden'}">
+                ${this.renderProfileTab()}
+              </div>
+              <div class="${this.activeTab === 'contact' ? '' : 'hidden'}">
+                ${this.renderContactTab()}
+              </div>
+              <div class="${this.activeTab === 'interests' ? '' : 'hidden'}">
+                ${this.renderInterestsTab()}
+              </div>
+
+              <div class="flex items-center justify-between gap-x-4 mt-8 pt-6 border-t ${backgroundColors.border}">
+                <button
+                  type="button"
+                  @click=${this.handleCancel}
+                  class="text-sm/6 font-semibold ${textColors.primary}"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  ?disabled=${this.isSaving}
+                  class="${buttonStyles.base} ${buttonStyles.sizes.md} ${buttonStyles.variants.primary} disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  ${this.isSaving
+                    ? html`<span class="inline-block w-4 h-4 border-2 border-white border-r-transparent rounded-full animate-spin mr-2"></span>`
+                    : ''}
+                  Save All Changes
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        <image-cropper-modal
+          .imageUrl=${this.selectedImageUrl}
+          .open=${this.showCropperModal}
+          @cancel=${this.handleCropperCancel}
+          @save=${this.handleCropperSave}
+          @error=${this.handleCropperError}
+        ></image-cropper-modal>
+      </div>
+    `;
+  }
+
+  private renderCreateMode() {
+    return html`
+      <div class="${pageStyles.container}">
+        <div class="${pageStyles.content}">
+          <h2 class="text-2xl/9 font-bold tracking-tight ${textColors.primary} mb-6">
+            Create Person
           </h2>
 
           <div class="${backgroundColors.content} px-6 py-8 shadow-sm sm:rounded-lg sm:px-12">
@@ -443,67 +697,6 @@ export class PersonFormPage extends LitElement {
                 </div>
               </div>
 
-              ${this.personId ? html`
-                <div>
-                  <label class="block text-sm/6 font-medium ${textColors.primary} mb-2">
-                    Profile Photo
-                  </label>
-                  <div class="flex items-center gap-4">
-                    ${this.imageURL ? html`
-                      <img
-                        src=${this.imageURL}
-                        alt="Profile preview"
-                        class="w-20 h-20 rounded-full object-cover border-2 ${backgroundColors.border}"
-                      />
-                    ` : html`
-                      <div class="w-20 h-20 rounded-full ${backgroundColors.pageAlt} flex items-center justify-center border-2 ${backgroundColors.border}">
-                        <span class="text-2xl ${textColors.tertiary}">?</span>
-                      </div>
-                    `}
-                    <div>
-                      <button
-                        type="button"
-                        @click=${this.handleUploadButtonClick}
-                        ?disabled=${this.isUploadingAvatar}
-                        class="cursor-pointer inline-flex items-center px-4 py-2 rounded-md border ${backgroundColors.border} text-sm font-medium ${textColors.primary} ${backgroundColors.content} ${backgroundColors.contentHover} focus:outline-2 focus:outline-offset-2 focus:outline-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        ${this.isUploadingAvatar ? html`
-                          <span class="inline-block w-4 h-4 border-2 border-current border-r-transparent rounded-full animate-spin mr-2"></span>
-                          Uploading...
-                        ` : html`
-                          ${this.imageURL ? 'Change Photo' : 'Upload Photo'}
-                        `}
-                      </button>
-                      <input
-                        id="avatar-upload"
-                        type="file"
-                        accept=".jpg,.jpeg,.png,.webp"
-                        class="hidden"
-                        @change=${this.handleFileSelect}
-                        ?disabled=${this.isUploadingAvatar}
-                      />
-                      <p class="mt-1 text-xs ${textColors.tertiary}">
-                        JPG, PNG, or WebP. Max 5MB.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              ` : ''}
-
-              ${this.personId ? html`
-                <contact-info-form
-                  entityType="person"
-                  .entityId=${this.personId}
-                  .contactInformations=${this.contactInformations}
-                  @contact-info-changed=${(e: CustomEvent) => {
-                    this.contactInformations = e.detail.items;
-                  }}
-                  @contact-error=${(e: CustomEvent) => {
-                    this.store.dispatch(addNotification(e.detail.error, 'error'));
-                  }}
-                ></contact-info-form>
-              ` : ''}
-
               <div class="pt-6 border-t ${backgroundColors.border}">
                 <interests-form
                   .personDisplayId=${this.personDisplayId || ''}
@@ -530,7 +723,7 @@ export class PersonFormPage extends LitElement {
                   ${this.isSaving
                     ? html`<span class="inline-block w-4 h-4 border-2 border-white border-r-transparent rounded-full animate-spin mr-2"></span>`
                     : ''}
-                  ${this.personDisplayId ? 'Update Person' : 'Create Person'}
+                  Create Person
                 </button>
               </div>
             </form>
@@ -546,6 +739,18 @@ export class PersonFormPage extends LitElement {
         ></image-cropper-modal>
       </div>
     `;
+  }
+
+  render() {
+    if (this.isLoading) {
+      return html`
+        <div class="${contentStateStyles.containerFullHeight}">
+          <div class="inline-block w-8 h-8 border-4 border-indigo-600 border-r-transparent rounded-full animate-spin"></div>
+        </div>
+      `;
+    }
+
+    return this.isEditMode ? this.renderEditMode() : this.renderCreateMode();
   }
 }
 
