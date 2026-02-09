@@ -8,20 +8,22 @@ import { checkSession } from '../../store/slices/auth.js';
 import { selectCurrentUser } from '../../store/selectors.js';
 import { toDisplayId } from '../../utilities/string.js';
 import { textColors, backgroundColors } from '../../utilities/text-colors.js';
-import { buttonStyles, inputStyles, cardStyles } from '../../utilities/design-tokens.js';
+import { buttonStyles, inputStyles, cardStyles, spinnerStyles } from '../../utilities/design-tokens.js';
+import { SEARCH_DEBOUNCE_MS } from '../../constants.js';
 import '../ui/contact-info-form.js';
 import '../ui/interests-form.js';
 import type { InterestsForm } from '../ui/interests-form.js';
 import type { AppStore } from '../../store/index.js';
 import type { ApiClient } from '../../services/api-client.js';
-import type { ContactInformation } from '@irl/shared';
+import type { ContactInformation, Group } from '@irl/shared';
 
-const STEP_LABELS = ['Profile', 'Contact', 'Interests'] as const;
+const STEP_LABELS = ['Profile', 'Contact', 'Interests', 'Groups'] as const;
 
 const STEP_DESCRIPTIONS = [
   'This is how you\'ll be represented to others in the community. You can create multiple profiles to represent family members, and transfer ownership later.',
   'Share your contact details so community members can connect with you. Each item can be set as Public (visible to all) or Private (only visible to you and admins). When you add a physical address and set it to private, others can still see who is within a 3-mile radius without seeing your exact location.',
   'Your interests help us find similar people and suggest like-minded individuals. They are not displayed on your profile \u2014 they\'re used behind the scenes to power recommendations.',
+  'Groups help organize people into households, classrooms, teams, or any other meaningful collection. Search for an existing group to join, or create a new one.',
 ] as const;
 
 @customElement('person-creation-wizard')
@@ -73,6 +75,40 @@ export class PersonCreationWizard extends LitElement {
 
   @state()
   private contactInformations: ContactInformation[] = [];
+
+  // Step 4: Groups state
+  @state()
+  private groupSearchQuery = '';
+
+  @state()
+  private groupSearchResults: Group[] = [];
+
+  @state()
+  private isSearchingGroups = false;
+
+  @state()
+  private showGroupDropdown = false;
+
+  @state()
+  private joinedGroups: Group[] = [];
+
+  @state()
+  private newGroupName = '';
+
+  @state()
+  private isCreatingGroup = false;
+
+  @state()
+  private isJoiningGroup = false;
+
+  private groupSearchTimer: number | null = null;
+
+  disconnectedCallback() {
+    super.disconnectedCallback();
+    if (this.groupSearchTimer !== null) {
+      window.clearTimeout(this.groupSearchTimer);
+    }
+  }
 
   private handleInputChange(e: Event) {
     const target = e.target as HTMLInputElement;
@@ -169,7 +205,7 @@ export class PersonCreationWizard extends LitElement {
     this.currentStep = 3;
   }
 
-  private async handleStep3Finish() {
+  private async handleStep3Next() {
     const interestsForm = this.querySelector('interests-form') as InterestsForm | null;
     if (interestsForm && this.personDisplayId) {
       this.isSaving = true;
@@ -190,13 +226,128 @@ export class PersonCreationWizard extends LitElement {
       }
     }
 
+    this.currentStep = 4;
+  }
+
+  private handleStep4Finish() {
     this.navigateToHome();
+  }
+
+  // Step 4: Group search
+  private async performGroupSearch(query: string) {
+    if (!query.trim()) {
+      this.groupSearchResults = [];
+      this.showGroupDropdown = false;
+      return;
+    }
+
+    this.isSearchingGroups = true;
+    try {
+      const response = await this.api.getGroups({ page: 1, limit: 10, search: query });
+      if (response.success && response.data) {
+        // Filter out groups the user has already joined in this session
+        const joinedIds = new Set(this.joinedGroups.map(g => g.id));
+        this.groupSearchResults = response.data.filter(g => !joinedIds.has(g.id));
+        this.showGroupDropdown = this.groupSearchResults.length > 0;
+      }
+    } catch (error) {
+      console.error('Failed to search groups:', error);
+      this.groupSearchResults = [];
+      this.showGroupDropdown = false;
+    } finally {
+      this.isSearchingGroups = false;
+    }
+  }
+
+  private handleGroupSearchInput(e: Event) {
+    const target = e.target as HTMLInputElement;
+    this.groupSearchQuery = target.value;
+
+    if (this.groupSearchTimer !== null) {
+      window.clearTimeout(this.groupSearchTimer);
+    }
+
+    this.groupSearchTimer = window.setTimeout(() => {
+      this.performGroupSearch(this.groupSearchQuery);
+    }, SEARCH_DEBOUNCE_MS);
+  }
+
+  private handleGroupSearchFocus() {
+    if (this.groupSearchQuery && this.groupSearchResults.length > 0) {
+      this.showGroupDropdown = true;
+    }
+  }
+
+  private handleGroupSearchBlur() {
+    setTimeout(() => {
+      this.showGroupDropdown = false;
+    }, 200);
+  }
+
+  private async handleJoinGroup(group: Group) {
+    this.isJoiningGroup = true;
+    try {
+      const response = await this.api.joinGroup(group.displayId);
+      if (response.success) {
+        this.joinedGroups = [...this.joinedGroups, group];
+        this.groupSearchQuery = '';
+        this.groupSearchResults = [];
+        this.showGroupDropdown = false;
+        this.store.dispatch(addNotification(`Joined ${group.name}`, 'success'));
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      this.store.dispatch(addNotification(`Failed to join group: ${message}`, 'error'));
+    } finally {
+      this.isJoiningGroup = false;
+    }
+  }
+
+  private async handleLeaveGroup(group: Group) {
+    try {
+      const response = await this.api.leaveGroup(group.displayId);
+      if (response.success) {
+        this.joinedGroups = this.joinedGroups.filter(g => g.id !== group.id);
+        this.store.dispatch(addNotification(`Left ${group.name}`, 'success'));
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      this.store.dispatch(addNotification(`Failed to leave group: ${message}`, 'error'));
+    }
+  }
+
+  private async handleCreateGroup() {
+    if (!this.newGroupName.trim()) return;
+
+    this.isCreatingGroup = true;
+    try {
+      const response = await this.api.createGroup({
+        name: this.newGroupName.trim(),
+        displayId: toDisplayId(this.newGroupName.trim()),
+      });
+      if (response.success && response.data) {
+        this.joinedGroups = [...this.joinedGroups, response.data];
+        this.newGroupName = '';
+        this.store.dispatch(addNotification(`Created group "${response.data.name}"`, 'success'));
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      if (message.toLowerCase().includes('unique') || message.toLowerCase().includes('already exists')) {
+        this.store.dispatch(addNotification('A group with that name already exists. Try searching for it instead.', 'error'));
+      } else {
+        this.store.dispatch(addNotification(`Failed to create group: ${message}`, 'error'));
+      }
+    } finally {
+      this.isCreatingGroup = false;
+    }
   }
 
   private handleSkip() {
     if (this.currentStep === 2) {
       this.currentStep = 3;
     } else if (this.currentStep === 3) {
+      this.currentStep = 4;
+    } else if (this.currentStep === 4) {
       this.navigateToHome();
     }
   }
@@ -425,13 +576,174 @@ export class PersonCreationWizard extends LitElement {
           </div>
           <button
             type="button"
-            @click=${this.handleStep3Finish}
+            @click=${this.handleStep3Next}
             ?disabled=${this.isSaving}
             class="${buttonStyles.base} ${buttonStyles.sizes.md} ${buttonStyles.variants.primary}"
           >
             ${this.isSaving
               ? html`<span class="inline-block w-4 h-4 border-2 border-white border-r-transparent rounded-full animate-spin mr-2"></span>`
               : ''}
+            Next
+          </button>
+        </div>
+      </div>
+    `;
+  }
+
+  private renderStep4() {
+    return html`
+      <div class="space-y-6">
+        <!-- Group Search -->
+        <div>
+          <label class="${inputStyles.label}">
+            Search for a group to join
+          </label>
+          <div class="relative mt-2">
+            <input
+              type="text"
+              .value=${this.groupSearchQuery}
+              placeholder="Search by group name..."
+              class="${inputStyles.base} ${inputStyles.states.default} pr-10"
+              @input=${this.handleGroupSearchInput}
+              @focus=${this.handleGroupSearchFocus}
+              @blur=${this.handleGroupSearchBlur}
+            />
+            ${this.isSearchingGroups
+              ? html`
+                  <div class="absolute inset-y-0 right-0 flex items-center pr-3">
+                    <div class="inline-block w-4 h-4 border-2 border-indigo-600 border-r-transparent rounded-full animate-spin"></div>
+                  </div>
+                `
+              : ''}
+
+            ${this.showGroupDropdown
+              ? html`
+                  <div class="absolute z-10 mt-1 w-full bg-white dark:bg-gray-800 shadow-lg max-h-60 rounded-md py-1 text-base ring-1 ring-black/5 dark:ring-white/10 overflow-auto sm:text-sm">
+                    ${this.groupSearchResults.map(
+                      group => html`
+                        <div class="px-3 py-2 hover:bg-indigo-50 dark:hover:bg-indigo-900/30">
+                          <div class="flex items-center justify-between">
+                            <div class="min-w-0 flex-1">
+                              <div class="font-medium ${textColors.primary}">${group.name}</div>
+                              <div class="text-sm ${textColors.tertiary}">${group.displayId}</div>
+                              ${group.description
+                                ? html`<div class="text-xs ${textColors.muted} mt-1 truncate">${group.description}</div>`
+                                : ''}
+                            </div>
+                            <div class="ml-3 flex-shrink-0">
+                              ${group.allowsJoins
+                                ? html`
+                                    <button
+                                      type="button"
+                                      @click=${() => this.handleJoinGroup(group)}
+                                      ?disabled=${this.isJoiningGroup}
+                                      class="${buttonStyles.base} ${buttonStyles.sizes.sm} ${buttonStyles.variants.primary}"
+                                    >
+                                      Join
+                                    </button>
+                                  `
+                                : html`
+                                    <span class="inline-flex items-center rounded-md bg-gray-100 dark:bg-gray-700 px-2 py-1 text-xs font-medium ${textColors.tertiary}">
+                                      Invitation required
+                                    </span>
+                                  `}
+                            </div>
+                          </div>
+                        </div>
+                      `
+                    )}
+                  </div>
+                `
+              : ''}
+          </div>
+        </div>
+
+        <!-- Create New Group -->
+        <div class="${backgroundColors.pageAlt} rounded-lg p-4 border ${backgroundColors.border}">
+          <label class="${inputStyles.label}">
+            Or create a new group
+          </label>
+          <div class="mt-2 flex gap-2">
+            <input
+              type="text"
+              .value=${this.newGroupName}
+              placeholder="Group name"
+              class="${inputStyles.base} ${inputStyles.states.default} flex-1"
+              @input=${(e: Event) => {
+                this.newGroupName = (e.target as HTMLInputElement).value;
+              }}
+              @keydown=${(e: KeyboardEvent) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  this.handleCreateGroup();
+                }
+              }}
+            />
+            <button
+              type="button"
+              @click=${this.handleCreateGroup}
+              ?disabled=${this.isCreatingGroup || !this.newGroupName.trim()}
+              class="${buttonStyles.base} ${buttonStyles.sizes.md} ${buttonStyles.variants.secondary}"
+            >
+              ${this.isCreatingGroup
+                ? html`<span class="${spinnerStyles.base} ${spinnerStyles.sizes.sm} ${spinnerStyles.colors.primary} mr-2"></span>`
+                : ''}
+              Create
+            </button>
+          </div>
+        </div>
+
+        <!-- Joined Groups List -->
+        ${this.joinedGroups.length > 0
+          ? html`
+              <div>
+                <h3 class="text-sm font-medium ${textColors.primary} mb-3">Your groups</h3>
+                <ul class="divide-y ${backgroundColors.divide} border ${backgroundColors.border} rounded-lg overflow-hidden">
+                  ${this.joinedGroups.map(
+                    group => html`
+                      <li class="flex items-center justify-between px-4 py-3 ${backgroundColors.content}">
+                        <div>
+                          <div class="font-medium text-sm ${textColors.primary}">${group.name}</div>
+                          <div class="text-xs ${textColors.tertiary}">${group.displayId}</div>
+                        </div>
+                        <button
+                          type="button"
+                          @click=${() => this.handleLeaveGroup(group)}
+                          class="text-sm ${textColors.error} hover:underline"
+                        >
+                          Remove
+                        </button>
+                      </li>
+                    `
+                  )}
+                </ul>
+              </div>
+            `
+          : ''}
+
+        <!-- Navigation -->
+        <div class="flex justify-between">
+          <div class="flex gap-2">
+            <button
+              type="button"
+              @click=${this.handleBack}
+              class="${buttonStyles.base} ${buttonStyles.sizes.md} ${buttonStyles.variants.secondary}"
+            >
+              Back
+            </button>
+            <button
+              type="button"
+              @click=${this.handleSkip}
+              class="${buttonStyles.base} ${buttonStyles.sizes.md} ${buttonStyles.variants.ghost}"
+            >
+              Skip
+            </button>
+          </div>
+          <button
+            type="button"
+            @click=${this.handleStep4Finish}
+            class="${buttonStyles.base} ${buttonStyles.sizes.md} ${buttonStyles.variants.primary}"
+          >
             Finish
           </button>
         </div>
@@ -454,6 +766,7 @@ export class PersonCreationWizard extends LitElement {
           ${this.currentStep === 1 ? this.renderStep1() : ''}
           ${this.currentStep === 2 ? this.renderStep2() : ''}
           ${this.currentStep === 3 ? this.renderStep3() : ''}
+          ${this.currentStep === 4 ? this.renderStep4() : ''}
         </div>
       </div>
     `;
