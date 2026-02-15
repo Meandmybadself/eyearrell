@@ -1,10 +1,10 @@
 import { Router } from 'express';
-import bcrypt from 'bcrypt';
 import crypto from 'crypto';
 import { prisma } from '../lib/prisma.js';
 import { sendVerificationEmail } from '../lib/email.js';
+import { checkEmailRateLimit } from '../lib/rate-limit.js';
 import { asyncHandler, createError } from '../middleware/error-handler.js';
-import { validateBody, userSchema, updateUserSchema, validateIdParam, changePasswordSchema, changeEmailSchema } from '../middleware/validation.js';
+import { validateBody, userSchema, updateUserSchema, validateIdParam, changeEmailSchema } from '../middleware/validation.js';
 import { requireSystemAdmin, requireAuth } from '../middleware/auth.js';
 import type { ApiResponse, PaginatedResponse, User } from '@irl/shared';
 
@@ -12,8 +12,7 @@ const router: ReturnType<typeof Router> = Router();
 
 // Helper to exclude sensitive and internal fields from user responses
 const excludeSensitiveFields = (user: any): User => {
-  const { password, verificationToken, deleted, ...userWithoutSensitive } = user;
-  void password;
+  const { verificationToken, deleted, ...userWithoutSensitive } = user;
   void verificationToken;
   void deleted;
   return {
@@ -30,7 +29,7 @@ interface UpdatedUserResult {
 
 const updateUserRecord = async (id: number, body: any): Promise<UpdatedUserResult> => {
   const users = await prisma.user.findMany({
-    where: { 
+    where: {
       id,
       deleted: false,
 
@@ -43,21 +42,12 @@ const updateUserRecord = async (id: number, body: any): Promise<UpdatedUserResul
     throw createError(404, 'User not found');
   }
 
-  const { password, ...userData } = body;
-  const updateData: any = { ...userData };
+  const updateData: any = { ...body };
   let verificationToken: string | null = null;
 
-  if (password) {
-    const saltRounds = 12;
-    updateData.password = await bcrypt.hash(password, saltRounds);
-  }
-
-  if (typeof userData.email === 'string' && userData.email !== existingUser.email) {
-    const emailVerificationEnabled = process.env.EMAIL_VERIFICATION_ENABLED?.toLowerCase() !== 'false';
-    if (emailVerificationEnabled) {
-      verificationToken = crypto.randomBytes(32).toString('hex');
-      updateData.verificationToken = verificationToken;
-    }
+  if (typeof body.email === 'string' && body.email !== existingUser.email) {
+    verificationToken = crypto.randomBytes(32).toString('hex');
+    updateData.verificationToken = verificationToken;
   }
 
   const item = await prisma.user.update({
@@ -78,9 +68,9 @@ router.get('/me', requireAuth, asyncHandler(async (req, res) => {
   }
 
   const user = await prisma.user.findUnique({
-    where: { 
+    where: {
       id: req.user.id,
-      deleted: false 
+      deleted: false
     }
   });
 
@@ -108,71 +98,23 @@ router.get('/me', requireAuth, asyncHandler(async (req, res) => {
   res.json(response);
 }));
 
-// POST /api/users/me/password - Change password
-router.post('/me/password', requireAuth, validateBody(changePasswordSchema), asyncHandler(async (req, res) => {
-  if (!req.user) {
-    throw createError(401, 'Authentication required');
-  }
-
-  const { currentPassword, newPassword } = req.body;
-
-  const user = await prisma.user.findUnique({
-    where: { 
-      id: req.user.id,
-      deleted: false 
-    }
-  });
-
-  if (!user) {
-    throw createError(404, 'User not found');
-  }
-
-  // Verify current password
-  const isValidPassword = await bcrypt.compare(currentPassword, user.password);
-  if (!isValidPassword) {
-    throw createError(401, 'Current password is incorrect');
-  }
-
-  // Hash new password
-  const saltRounds = 12;
-  const hashedPassword = await bcrypt.hash(newPassword, saltRounds);
-
-  // Update password
-  await prisma.user.update({
-    where: { id: user.id },
-    data: { password: hashedPassword }
-  });
-
-  const response: ApiResponse<null> = {
-    success: true,
-    message: 'Password updated successfully'
-  };
-
-  res.json(response);
-}));
-
 // POST /api/users/me/email - Request email change
 router.post('/me/email', requireAuth, validateBody(changeEmailSchema), asyncHandler(async (req, res) => {
   if (!req.user) {
     throw createError(401, 'Authentication required');
   }
 
-  const { newEmail, currentPassword } = req.body;
+  const { newEmail } = req.body;
 
   const user = await prisma.user.findUnique({
-    where: { 
+    where: {
       id: req.user.id,
-      deleted: false 
+      deleted: false
     }
   });
 
   if (!user) {
     throw createError(404, 'User not found');
-  }
-
-  const isValidPassword = await bcrypt.compare(currentPassword, user.password);
-  if (!isValidPassword) {
-    throw createError(401, 'Current password is incorrect');
   }
 
   // Check if email is already in use
@@ -192,22 +134,9 @@ router.post('/me/email', requireAuth, validateBody(changeEmailSchema), asyncHand
     throw createError(400, 'New email must be different from current email');
   }
 
-  const emailVerificationEnabled = process.env.EMAIL_VERIFICATION_ENABLED?.toLowerCase() !== 'false';
-
-  if (!emailVerificationEnabled) {
-    // Skip verification — update email directly
-    await prisma.user.update({
-      where: { id: user.id },
-      data: { email: newEmail }
-    });
-
-    const response: ApiResponse<null> = {
-      success: true,
-      message: 'Email address updated successfully'
-    };
-
-    res.json(response);
-    return;
+  // Rate limit: max 3 emails per address per 15 minutes
+  if (!checkEmailRateLimit(newEmail)) {
+    throw createError(429, 'Too many requests. Please try again later.');
   }
 
   // Delete any existing email change requests for this user
@@ -448,11 +377,11 @@ router.get('/verify', asyncHandler(async (req, res) => {
 // GET /api/users/:id - Get specific user (admin only)
 router.get('/:id', requireSystemAdmin, validateIdParam, asyncHandler(async (req, res) => {
   const id = parseInt(req.params.id, 10);
-  
+
   const users = await prisma.user.findMany({
-    where: { 
+    where: {
       id,
-      deleted: false 
+      deleted: false
     },
     take: 1
   });
@@ -470,13 +399,9 @@ router.get('/:id', requireSystemAdmin, validateIdParam, asyncHandler(async (req,
   res.json(response);
 }));
 
-// POST /api/users - Create new user
+// POST /api/users - Create new user (registration)
 router.post('/', validateBody(userSchema), asyncHandler(async (req, res) => {
-  const { password, isSystemAdmin: requestedAdmin, ...userData } = req.body;
-
-  // Hash password
-  const saltRounds = 12;
-  const hashedPassword = await bcrypt.hash(password, saltRounds);
+  const { isSystemAdmin: requestedAdmin, ...userData } = req.body;
 
   // Generate verification token
   const verificationToken = crypto.randomBytes(32).toString('hex');
@@ -485,8 +410,7 @@ router.post('/', validateBody(userSchema), asyncHandler(async (req, res) => {
   const userCount = await prisma.user.count({ where: { deleted: false } });
   const isSystemAdmin = userCount === 0 ? true : Boolean(requestedAdmin);
   const isFirstUser = userCount === 0;
-  const emailVerificationEnabled = process.env.EMAIL_VERIFICATION_ENABLED?.toLowerCase() !== 'false';
-  const skipVerification = isFirstUser || !emailVerificationEnabled;
+  const skipVerification = isFirstUser;
 
   // Check if registration is allowed (always allow first user for bootstrapping)
   if (!isFirstUser) {
@@ -502,7 +426,6 @@ router.post('/', validateBody(userSchema), asyncHandler(async (req, res) => {
   const item = await prisma.user.create({
     data: {
       ...userData,
-      password: hashedPassword,
       verificationToken: skipVerification ? null : verificationToken,
       isSystemAdmin
     }
@@ -515,6 +438,23 @@ router.post('/', validateBody(userSchema), asyncHandler(async (req, res) => {
     } catch (error) {
       console.error('Failed to send verification email:', error);
     }
+  }
+
+  // First user: auto-login
+  if (isFirstUser) {
+    await new Promise<void>((resolve, reject) => {
+      req.login(item, (err) => {
+        if (err) reject(err);
+        else resolve();
+      });
+    });
+
+    await new Promise<void>((resolve, reject) => {
+      req.session.save((err) => {
+        if (err) reject(err);
+        else resolve();
+      });
+    });
   }
 
   const response: ApiResponse<User> = {
@@ -575,9 +515,9 @@ router.delete('/:id', requireSystemAdmin, validateIdParam, asyncHandler(async (r
   const id = parseInt(req.params.id, 10);
 
   const users = await prisma.user.findMany({
-    where: { 
+    where: {
       id,
-      deleted: false 
+      deleted: false
     },
     take: 1
   });

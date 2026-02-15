@@ -5,7 +5,6 @@ import { asyncHandler, createError } from '../middleware/error-handler.js';
 import { validateBody, systemSchema, updateSystemSchema } from '../middleware/validation.js';
 import { requireSystemAdmin } from '../middleware/auth.js';
 import type { ApiResponse, System, SystemWithRelations, SystemExportData, ContactInformation } from '@irl/shared';
-import crypto from 'crypto';
 
 const router: ReturnType<typeof Router> = Router();
 
@@ -304,14 +303,12 @@ router.post('/import', requireSystemAdmin, asyncHandler(async (req, res) => {
       });
     }
 
-    // Step 3: Import users (generate random passwords)
+    // Step 3: Import users
     for (const user of importData.users) {
-      const randomPassword = crypto.randomBytes(32).toString('hex');
       await tx.user.create({
         data: {
           id: user.id,
           email: user.email,
-          password: randomPassword, // Users will need to reset password
           isSystemAdmin: user.isSystemAdmin,
           verificationToken: null,
           deleted: false
@@ -410,7 +407,7 @@ router.post('/import', requireSystemAdmin, asyncHandler(async (req, res) => {
 
   const response: ApiResponse<null> = {
     success: true,
-    message: 'System imported successfully. All users will need to reset their passwords.'
+    message: 'System imported successfully. Users can sign in via magic link.'
   };
 
   res.json(response);

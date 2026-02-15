@@ -30,7 +30,6 @@ model ContactInformation {
 model User {
   id                 Int                  @id @default(autoincrement())
   email              String               @unique
-  password           String
   verificationToken  String?
   isSystemAdmin      Boolean              @default(false)
   createdAt          DateTime             @default(now())
@@ -44,6 +43,21 @@ model User {
   pointTransactions  PointTransaction[]
 
   @@map("users")
+}
+
+model AuthenticationAttempt {
+  id        Int       @id @default(autoincrement())
+  email     String
+  token     String    @unique
+  expiresAt DateTime
+  used      Boolean   @default(false)
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([token])
+  @@index([email])
+  @@index([expiresAt])
+  @@map("authentication_attempts")
 }
 
 model Person {

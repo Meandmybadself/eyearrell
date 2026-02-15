@@ -1,5 +1,4 @@
 import { prisma } from '../lib/prisma.js';
-import bcrypt from 'bcrypt';
 import { updatePersonInterestVector } from './vector-helpers.js';
 
 // First names pool
@@ -117,9 +116,6 @@ export const seedTestUsers = async () => {
     spouseLastNames.push(randomElement(lastNames));
   }
 
-  const saltRounds = 12;
-  const defaultPassword = await bcrypt.hash('password123', saltRounds);
-
   let created = 0;
   let errors = 0;
 
@@ -157,7 +153,6 @@ export const seedTestUsers = async () => {
       const user = await prisma.user.create({
         data: {
           email,
-          password: defaultPassword,
           verificationToken: null, // Mark as verified
           isSystemAdmin: false
         }

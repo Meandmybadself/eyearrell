@@ -7,7 +7,7 @@ import { addNotification } from '../store/slices/ui.js';
 import { selectSystemName, selectSystemDescription, selectSystemContactInformation } from '../store/selectors.js';
 import type { ContactInformation } from '@irl/shared';
 import { ContactType } from '@irl/shared';
-import { validateEmail, validatePassword } from '../utilities/validation.js';
+import { validateEmail } from '../utilities/validation.js';
 import { pageStyles } from '../utilities/design-tokens.js';
 import type { AppStore } from '../store/index.js';
 
@@ -26,10 +26,13 @@ export class RegisterPage extends LitElement {
   private email = '';
 
   @state()
-  private password = '';
+  private emailError = '';
 
   @state()
-  private emailError = '';
+  private isLoading = false;
+
+  @state()
+  private emailSent = false;
 
   connectedCallback() {
     super.connectedCallback();
@@ -43,12 +46,6 @@ export class RegisterPage extends LitElement {
       this.email = emailParam;
     }
   }
-
-  @state()
-  private passwordError = '';
-
-  @state()
-  private isLoading = false;
 
   private get systemName(): string | null {
     return selectSystemName(this.store.getState());
@@ -103,13 +100,9 @@ export class RegisterPage extends LitElement {
 
   private handleInputChange(e: Event) {
     const target = e.target as HTMLInputElement;
-    const { name, value } = target;
-    if (name === 'email') {
-      this.email = value;
+    if (target.name === 'email') {
+      this.email = target.value;
       this.emailError = '';
-    } else if (name === 'password') {
-      this.password = value;
-      this.passwordError = '';
     }
   }
 
@@ -118,32 +111,25 @@ export class RegisterPage extends LitElement {
 
     // Validate
     this.emailError = validateEmail(this.email) || '';
-    this.passwordError = validatePassword(this.password) || '';
 
-    if (this.emailError || this.passwordError) {
+    if (this.emailError) {
       return;
     }
 
     this.isLoading = true;
 
     try {
-      const result = await this.store.dispatch(register(this.email, this.password));
+      const result = await this.store.dispatch(register(this.email));
 
-      // Check if this was the first user (account created vs user created)
+      // Check if this was the first user (auto-logged in)
       const isFirstUser = result.message === 'Account created successfully';
 
       if (isFirstUser) {
-        this.store.dispatch(addNotification('Account created successfully! You can now sign in.', 'success'));
-        // Navigate to login page using client-side navigation
-        const targetPath = '/login';
-        window.history.pushState({}, '', targetPath);
+        this.store.dispatch(addNotification('Account created successfully!', 'success'));
+        window.history.pushState({}, '', '/home');
         window.dispatchEvent(new PopStateEvent('popstate'));
       } else {
-        this.store.dispatch(addNotification('Registration successful! Please check your email to verify your account.', 'success'));
-        // Navigate to verify email page using client-side navigation
-        const targetPath = '/verify-email?email=' + encodeURIComponent(this.email);
-        window.history.pushState({}, '', targetPath);
-        window.dispatchEvent(new PopStateEvent('popstate'));
+        this.emailSent = true;
       }
     } catch (error) {
       this.store.dispatch(
@@ -158,6 +144,34 @@ export class RegisterPage extends LitElement {
   }
 
   render() {
+    if (this.emailSent) {
+      return html`
+        <div class="${pageStyles.container} flex flex-col justify-center">
+          <div class="${pageStyles.content}">
+            <div class="max-w-md mx-auto bg-white px-6 py-12 shadow-sm sm:rounded-lg sm:px-12 text-center">
+              <div class="text-5xl mb-4">&#x2709;&#xFE0F;</div>
+              <h2 class="text-2xl/9 font-bold tracking-tight text-gray-900 mb-4">
+                Check your email
+              </h2>
+              <p class="text-gray-600 mb-2">
+                We've sent a sign-in link to
+              </p>
+              <p class="font-semibold text-gray-900 mb-4">${this.email}</p>
+              <p class="text-sm text-gray-500 mb-6">
+                Click the link in the email to sign in. The link will expire in 15 minutes.
+              </p>
+              <button
+                @click=${() => { this.emailSent = false; }}
+                class="text-sm text-indigo-600 hover:text-indigo-500 font-medium"
+              >
+                Use a different email
+              </button>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
     return html`
       <div class="${pageStyles.container} flex flex-col justify-center">
         <div class="${pageStyles.content}">
@@ -214,25 +228,6 @@ export class RegisterPage extends LitElement {
               </div>
 
               <div>
-                <label for="password" class="block text-sm/6 font-medium text-gray-900">
-                  Password (at least 8 characters)
-                </label>
-                <div class="mt-2">
-                  <input
-                    id="password"
-                    name="password"
-                    type="password"
-                    .value=${this.password}
-                    required
-                    autocomplete="new-password"
-                    class="block w-full rounded-md bg-white px-3 py-1.5 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 sm:text-sm/6 ${this.passwordError ? 'outline-red-500 focus:outline-red-600' : ''}"
-                    @input=${this.handleInputChange}
-                  />
-                  ${this.passwordError ? html`<p class="mt-1 text-sm text-red-600">${this.passwordError}</p>` : ''}
-                </div>
-              </div>
-
-              <div>
                 <button
                   type="submit"
                   ?disabled=${this.isLoading}
@@ -245,6 +240,10 @@ export class RegisterPage extends LitElement {
                 </button>
               </div>
             </form>
+
+            <p class="mt-4 text-center text-xs text-gray-500">
+              We'll email you a link to sign in. No password needed.
+            </p>
 
             <div>
               <div class="mt-10 flex items-center gap-x-6">

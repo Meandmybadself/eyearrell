@@ -218,13 +218,11 @@ export interface UpdateContactInformationRequest {
 
 export interface CreateUserRequest {
   email: string;
-  password: string;
   isSystemAdmin?: boolean;
 }
 
 export interface UpdateUserRequest {
   email?: string;
-  password?: string;
   isSystemAdmin?: boolean;
 }
 
@@ -370,7 +368,7 @@ export interface SystemExportData {
   version: string;
   exportedAt: string;
   system: System | null;
-  users: Omit<User, 'password'>[];
+  users: User[];
   persons: Person[];
   groups: Group[];
   contactInformations: ContactInformation[];

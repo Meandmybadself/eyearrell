@@ -11,16 +11,6 @@ export const validateEmail = (email: string): string | null => {
   return null;
 };
 
-export const validatePassword = (password: string): string | null => {
-  if (!password) {
-    return 'Password is required';
-  }
-  if (password.length < 8) {
-    return 'Password must be at least 8 characters';
-  }
-  return null;
-};
-
 export const validatePhone = (phone: string): string | null => {
   if (!phone) {
     return 'Phone number is required';

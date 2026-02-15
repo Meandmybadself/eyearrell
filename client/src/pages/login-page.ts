@@ -2,7 +2,7 @@ import { LitElement, html } from 'lit';
 import { customElement, state } from 'lit/decorators.js';
 import { consume } from '@lit-labs/context';
 import { storeContext } from '../contexts/store-context.js';
-import { login } from '../store/slices/auth.js';
+import { sendMagicLink, verifyMagicLink } from '../store/slices/auth.js';
 import { addNotification } from '../store/slices/ui.js';
 import { selectAttemptedPath, selectSystemName, selectSystemDescription, selectRegistrationOpen, selectSystemContactInformation } from '../store/selectors.js';
 import type { ContactInformation } from '@irl/shared';
@@ -28,16 +28,16 @@ export class LoginPage extends LitElement {
   private email = '';
 
   @state()
-  private password = '';
-
-  @state()
   private emailError = '';
 
   @state()
-  private passwordError = '';
+  private isLoading = false;
 
   @state()
-  private isLoading = false;
+  private emailSent = false;
+
+  @state()
+  private isVerifyingToken = false;
 
   private get systemName(): string | null {
     return selectSystemName(this.store.getState());
@@ -53,6 +53,41 @@ export class LoginPage extends LitElement {
 
   private get systemContactInformation(): ContactInformation[] {
     return selectSystemContactInformation(this.store.getState());
+  }
+
+  connectedCallback() {
+    super.connectedCallback();
+
+    // Check for magic link token in URL
+    const params = new URLSearchParams(window.location.search);
+    const token = params.get('token');
+    if (token) {
+      this.handleMagicLinkVerification(token);
+    }
+  }
+
+  private async handleMagicLinkVerification(token: string) {
+    this.isVerifyingToken = true;
+    try {
+      await this.store.dispatch(verifyMagicLink(token));
+      this.store.dispatch(addNotification('Welcome back!', 'success'));
+
+      const attemptedPath = selectAttemptedPath(this.store.getState());
+      const targetPath = attemptedPath || '/home';
+      window.history.pushState({}, '', targetPath);
+      window.dispatchEvent(new PopStateEvent('popstate'));
+    } catch (error) {
+      this.store.dispatch(
+        addNotification(
+          error instanceof Error ? error.message : 'Invalid or expired sign-in link. Please request a new one.',
+          'error'
+        )
+      );
+      // Clear token from URL
+      window.history.replaceState({}, '', '/login');
+    } finally {
+      this.isVerifyingToken = false;
+    }
   }
 
   private renderContactIcon(type: ContactType) {
@@ -96,13 +131,9 @@ export class LoginPage extends LitElement {
 
   private handleInputChange(e: Event) {
     const target = e.target as HTMLInputElement;
-    const { name, value } = target;
-    if (name === 'email') {
-      this.email = value;
+    if (target.name === 'email') {
+      this.email = target.value;
       this.emailError = '';
-    } else if (name === 'password') {
-      this.password = value;
-      this.passwordError = '';
     }
   }
 
@@ -111,29 +142,20 @@ export class LoginPage extends LitElement {
 
     // Validate
     this.emailError = validateEmail(this.email) || '';
-    if (!this.password) {
-      this.passwordError = 'Password is required';
-    }
 
-    if (this.emailError || this.passwordError) {
+    if (this.emailError) {
       return;
     }
 
     this.isLoading = true;
 
     try {
-      await this.store.dispatch(login(this.email, this.password));
-      this.store.dispatch(addNotification('Welcome back!', 'success'));
-
-      // Redirect to attempted path or home using client-side navigation
-      const attemptedPath = selectAttemptedPath(this.store.getState());
-      const targetPath = attemptedPath || '/home';
-      window.history.pushState({}, '', targetPath);
-      window.dispatchEvent(new PopStateEvent('popstate'));
+      await this.store.dispatch(sendMagicLink(this.email));
+      this.emailSent = true;
     } catch (error) {
       this.store.dispatch(
         addNotification(
-          error instanceof Error ? error.message : 'Login failed. Please check your credentials.',
+          error instanceof Error ? error.message : 'Failed to send sign-in link.',
           'error'
         )
       );
@@ -143,6 +165,43 @@ export class LoginPage extends LitElement {
   }
 
   render() {
+    if (this.isVerifyingToken) {
+      return html`
+        <div class="${pageStyles.container} flex flex-col justify-center items-center">
+          <div class="inline-block w-8 h-8 border-4 border-indigo-600 border-r-transparent rounded-full animate-spin"></div>
+          <p class="mt-4 text-gray-600">Signing you in...</p>
+        </div>
+      `;
+    }
+
+    if (this.emailSent) {
+      return html`
+        <div class="${pageStyles.container} flex flex-col justify-center">
+          <div class="${pageStyles.content}">
+            <div class="max-w-md mx-auto bg-white px-6 py-12 shadow-sm sm:rounded-lg sm:px-12 text-center">
+              <div class="text-5xl mb-4">&#x2709;&#xFE0F;</div>
+              <h2 class="text-2xl/9 font-bold tracking-tight text-gray-900 mb-4">
+                Check your email
+              </h2>
+              <p class="text-gray-600 mb-2">
+                We've sent a sign-in link to
+              </p>
+              <p class="font-semibold text-gray-900 mb-4">${this.email}</p>
+              <p class="text-sm text-gray-500 mb-6">
+                Click the link in the email to sign in. The link will expire in 15 minutes.
+              </p>
+              <button
+                @click=${() => { this.emailSent = false; }}
+                class="text-sm text-indigo-600 hover:text-indigo-500 font-medium"
+              >
+                Use a different email
+              </button>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
     return html`
       <div class="${pageStyles.container} flex flex-col justify-center">
         <div class="${pageStyles.content}">
@@ -198,25 +257,6 @@ export class LoginPage extends LitElement {
               </div>
 
               <div>
-                <label for="password" class="block text-sm/6 font-medium text-gray-900">
-                  Password
-                </label>
-                <div class="mt-2">
-                  <input
-                    id="password"
-                    name="password"
-                    type="password"
-                    .value=${this.password}
-                    required
-                    autocomplete="current-password"
-                    class="block w-full rounded-md bg-white px-3 py-1.5 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 sm:text-sm/6 ${this.passwordError ? 'outline-red-500 focus:outline-red-600' : ''}"
-                    @input=${this.handleInputChange}
-                  />
-                  ${this.passwordError ? html`<p class="mt-1 text-sm text-red-600">${this.passwordError}</p>` : ''}
-                </div>
-              </div>
-
-              <div>
                 <button
                   type="submit"
                   ?disabled=${this.isLoading}
@@ -225,10 +265,14 @@ export class LoginPage extends LitElement {
                   ${this.isLoading
                     ? html`<span class="inline-block w-4 h-4 border-2 border-white border-r-transparent rounded-full animate-spin mr-2"></span>`
                     : ''}
-                  Sign in
+                  Send sign-in link
                 </button>
               </div>
             </form>
+
+            <p class="mt-4 text-center text-xs text-gray-500">
+              We'll email you a link to sign in. No password needed.
+            </p>
 
             ${this.registrationOpen ? html`
               <div>

@@ -46,38 +46,70 @@ export const setAttemptedPath = (path: string | null) => ({
 });
 
 // Thunks
-export const login = (email: string, password: string): AppThunk => {
+export const sendMagicLink = (email: string): AppThunk => {
   return async (dispatch, _getState, { apiClient }) => {
     dispatch(authRequest());
     try {
-      const response = await apiClient.login(email, password);
-      if (!response.data) throw new Error('No data returned from login');
+      await apiClient.sendMagicLink(email);
+      dispatch({ type: 'auth/magicLinkSent' });
+    } catch (error) {
+      dispatch(authFailure(error instanceof Error ? error.message : 'Failed to send sign-in link'));
+      throw error;
+    }
+  };
+};
+
+export const verifyMagicLink = (token: string): AppThunk => {
+  return async (dispatch, _getState, { apiClient }) => {
+    dispatch(authRequest());
+    try {
+      const response = await apiClient.verifyMagicLink(token);
+      if (!response.data) throw new Error('No data returned from verification');
 
       const normalized = normalize(response.data, authResponseSchema);
-
       dispatch(mergeEntities(normalized.entities));
+
       if (response.data.person) {
         dispatch(authSuccess(response.data.user.id, response.data.person.id));
       } else {
         dispatch(authSuccess(response.data.user.id, null));
       }
 
-      // Load all user persons for the person switcher
       await dispatch(loadUserPersons());
     } catch (error) {
-      dispatch(authFailure(error instanceof Error ? error.message : 'Login failed'));
+      dispatch(authFailure(error instanceof Error ? error.message : 'Verification failed'));
       throw error;
     }
   };
 };
 
-export const register = (email: string, password: string): AppThunk<Promise<{ message: string }>> => {
+export const register = (email: string): AppThunk<Promise<{ message: string }>> => {
   return async (dispatch, _getState, { apiClient }) => {
     dispatch(authRequest());
     try {
-      const response = await apiClient.createUser({ email, password });
-      // Don't set auth state on register - user needs to verify email first
-      dispatch({ type: 'auth/registerSuccess' });
+      const response = await apiClient.createUser({ email });
+      // First user is auto-logged in; check if session was established
+      if (response.message === 'Account created successfully') {
+        // First user - check session to get auth state
+        try {
+          const sessionResponse = await apiClient.getCurrentSession();
+          if (sessionResponse.data) {
+            const normalized = normalize(sessionResponse.data, authResponseSchema);
+            dispatch(mergeEntities(normalized.entities));
+            if (sessionResponse.data.person) {
+              dispatch(authSuccess(sessionResponse.data.user.id, sessionResponse.data.person.id));
+            } else {
+              dispatch(authSuccess(sessionResponse.data.user.id, null));
+            }
+            await dispatch(loadUserPersons());
+          }
+        } catch {
+          // Session check failed - that's ok, user can login via magic link
+          dispatch({ type: 'auth/registerSuccess' });
+        }
+      } else {
+        dispatch({ type: 'auth/registerSuccess' });
+      }
       return { message: response.message || 'User created successfully' };
     } catch (error) {
       dispatch(authFailure(error instanceof Error ? error.message : 'Registration failed'));
@@ -215,6 +247,8 @@ export const authReducer = (
     case 'auth/registerSuccess':
       return { ...state, isLoading: false, error: null };
     case 'auth/verifySuccess':
+      return { ...state, isLoading: false, error: null };
+    case 'auth/magicLinkSent':
       return { ...state, isLoading: false, error: null };
     case AUTH_SET_ATTEMPTED_PATH:
       return { ...state, attemptedPath: action.payload };

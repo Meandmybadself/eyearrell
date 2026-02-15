@@ -160,11 +160,15 @@ export class ApiClient {
   }
 
   // Authentication endpoints
-  async login(email: string, password: string): Promise<ApiResponse<{ user: User; person: Person }>> {
-    return this.request<ApiResponse<{ user: User; person: Person }>>('/auth/login', {
+  async sendMagicLink(email: string): Promise<ApiResponse<null>> {
+    return this.request<ApiResponse<null>>('/auth/send-magic-link', {
       method: 'POST',
-      body: JSON.stringify({ email, password })
+      body: JSON.stringify({ email })
     });
+  }
+
+  async verifyMagicLink(token: string): Promise<ApiResponse<{ user: User; person: Person }>> {
+    return this.request<ApiResponse<{ user: User; person: Person }>>(`/auth/verify-magic-link?token=${encodeURIComponent(token)}`);
   }
 
   async logout(): Promise<ApiResponse<null>> {
@@ -567,17 +571,10 @@ export class ApiClient {
     return this.request<ApiResponse<User & { pendingEmail?: string }>>('/users/me');
   }
 
-  async changePassword(currentPassword: string, newPassword: string): Promise<ApiResponse<null>> {
-    return this.request<ApiResponse<null>>('/users/me/password', {
-      method: 'POST',
-      body: JSON.stringify({ currentPassword, newPassword })
-    });
-  }
-
-  async changeEmail(newEmail: string, currentPassword: string): Promise<ApiResponse<null>> {
+  async changeEmail(newEmail: string): Promise<ApiResponse<null>> {
     return this.request<ApiResponse<null>>('/users/me/email', {
       method: 'POST',
-      body: JSON.stringify({ newEmail, currentPassword })
+      body: JSON.stringify({ newEmail })
     });
   }
 

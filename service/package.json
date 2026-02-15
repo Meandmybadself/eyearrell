@@ -19,7 +19,6 @@
   "dependencies": {
     "@irl/shared": "workspace:*",
     "@prisma/client": "6.16.2",
-    "bcrypt": "6.0.0",
     "cloudinary": "^2.8.0",
     "connect-pg-simple": "10.0.0",
     "cookie-parser": "1.4.7",
@@ -33,13 +32,11 @@
     "multer": "^2.0.2",
     "nominatim-client": "^3.2.1",
     "passport": "0.7.0",
-    "passport-local": "1.0.0",
     "pg": "8.16.3",
     "zod": "^3.22.0"
   },
   "devDependencies": {
     "@faker-js/faker": "^10.0.0",
-    "@types/bcrypt": "^5.0.0",
     "@types/connect-pg-simple": "^7.0.3",
     "@types/cookie-parser": "^1.4.9",
     "@types/cors": "^2.8.19",
@@ -50,7 +47,6 @@
     "@types/nodemailer": "^6.4.0",
     "@types/node": "^22.0.0",
     "@types/passport": "^1.0.0",
-    "@types/passport-local": "^1.0.0",
     "@types/pg": "^8.10.0",
     "@types/supertest": "^6.0.3",
     "@typescript-eslint/eslint-plugin": "^6.0.0",

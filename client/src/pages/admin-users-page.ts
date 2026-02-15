@@ -46,9 +46,6 @@ export class AdminUsersPage extends LitElement {
   private newUserEmail = '';
 
   @state()
-  private newUserPassword = '';
-
-  @state()
   private newUserIsAdmin = false;
 
   // Edit user form state
@@ -57,9 +54,6 @@ export class AdminUsersPage extends LitElement {
 
   @state()
   private editingUserEmail = '';
-
-  @state()
-  private editingUserPassword = '';
 
   @state()
   private editingUserIsAdmin = false;
@@ -102,20 +96,18 @@ export class AdminUsersPage extends LitElement {
   private showAddUserForm() {
     this.showNewUserForm = true;
     this.newUserEmail = '';
-    this.newUserPassword = '';
     this.newUserIsAdmin = false;
   }
 
   private cancelNewUser() {
     this.showNewUserForm = false;
     this.newUserEmail = '';
-    this.newUserPassword = '';
     this.newUserIsAdmin = false;
   }
 
   private async createUser() {
-    if (!this.newUserEmail.trim() || !this.newUserPassword.trim()) {
-      this.store.dispatch(addNotification('Email and password are required', 'error'));
+    if (!this.newUserEmail.trim()) {
+      this.store.dispatch(addNotification('Email is required', 'error'));
       return;
     }
 
@@ -126,16 +118,10 @@ export class AdminUsersPage extends LitElement {
       return;
     }
 
-    if (this.newUserPassword.length < 8) {
-      this.store.dispatch(addNotification('Password must be at least 8 characters', 'error'));
-      return;
-    }
-
     this.isSaving = true;
     try {
       const response = await this.api.createUser({
         email: this.newUserEmail.trim(),
-        password: this.newUserPassword,
         isSystemAdmin: this.newUserIsAdmin
       });
 
@@ -143,7 +129,6 @@ export class AdminUsersPage extends LitElement {
         this.store.dispatch(addNotification('User created successfully', 'success'));
         this.showNewUserForm = false;
         this.newUserEmail = '';
-        this.newUserPassword = '';
         this.newUserIsAdmin = false;
         await this.loadUsers();
       }
@@ -166,7 +151,6 @@ export class AdminUsersPage extends LitElement {
     if (user) {
       this.editingUserId = user.id;
       this.editingUserEmail = user.email;
-      this.editingUserPassword = ''; // Never populate password
       this.editingUserIsAdmin = user.isSystemAdmin;
     }
   }
@@ -174,7 +158,6 @@ export class AdminUsersPage extends LitElement {
   private cancelEditUser() {
     this.editingUserId = null;
     this.editingUserEmail = '';
-    this.editingUserPassword = '';
     this.editingUserIsAdmin = false;
   }
 
@@ -191,12 +174,6 @@ export class AdminUsersPage extends LitElement {
       return;
     }
 
-    // Validate password if provided
-    if (this.editingUserPassword && this.editingUserPassword.length < 8) {
-      this.store.dispatch(addNotification('Password must be at least 8 characters', 'error'));
-      return;
-    }
-
     this.isSaving = true;
     try {
       const updateData: any = {
@@ -204,18 +181,12 @@ export class AdminUsersPage extends LitElement {
         isSystemAdmin: this.editingUserIsAdmin
       };
 
-      // Only include password if it was provided
-      if (this.editingUserPassword) {
-        updateData.password = this.editingUserPassword;
-      }
-
       const response = await this.api.patchUser(this.editingUserId, updateData);
 
       if (response.success) {
         this.store.dispatch(addNotification('User updated successfully', 'success'));
         this.editingUserId = null;
         this.editingUserEmail = '';
-        this.editingUserPassword = '';
         this.editingUserIsAdmin = false;
         await this.loadUsers();
       }
@@ -296,29 +267,6 @@ export class AdminUsersPage extends LitElement {
               autocomplete="off"
             />
           </div>
-          <div>
-            <label class="block text-xs font-medium ${textColors.secondary} mb-1">
-              Password
-            </label>
-            <input
-              type="password"
-              .value=${this.newUserPassword}
-              @input=${(e: Event) => {
-                this.newUserPassword = (e.target as HTMLInputElement).value;
-              }}
-              @keydown=${(e: KeyboardEvent) => {
-                if (e.key === 'Enter') {
-                  this.createUser();
-                } else if (e.key === 'Escape') {
-                  this.cancelNewUser();
-                }
-              }}
-              class="block w-full rounded-md ${backgroundColors.content} px-3 py-1.5 text-sm ${textColors.primary} outline-1 -outline-offset-1 ${backgroundColors.border} focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600"
-              ?disabled=${this.isSaving}
-              placeholder="Minimum 8 characters"
-              autocomplete="new-password"
-            />
-          </div>
           <div class="relative flex items-start">
             <div class="flex h-6 items-center">
               <input
@@ -396,32 +344,6 @@ export class AdminUsersPage extends LitElement {
               placeholder="user@example.com"
               autocomplete="off"
             />
-          </div>
-          <div>
-            <label class="block text-xs font-medium ${textColors.secondary} mb-1">
-              Password
-            </label>
-            <input
-              type="password"
-              .value=${this.editingUserPassword}
-              @input=${(e: Event) => {
-                this.editingUserPassword = (e.target as HTMLInputElement).value;
-              }}
-              @keydown=${(e: KeyboardEvent) => {
-                if (e.key === 'Enter') {
-                  this.saveUser();
-                } else if (e.key === 'Escape') {
-                  this.cancelEditUser();
-                }
-              }}
-              class="block w-full rounded-md ${backgroundColors.content} px-3 py-1.5 text-sm ${textColors.primary} outline-1 -outline-offset-1 ${backgroundColors.border} focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600"
-              ?disabled=${this.isSaving}
-              placeholder="Leave blank to keep current password"
-              autocomplete="new-password"
-            />
-            <p class="mt-1 text-xs ${textColors.tertiary}">
-              Leave blank to keep the current password. Minimum 8 characters if changing.
-            </p>
           </div>
           <div class="relative flex items-start">
             <div class="flex h-6 items-center">

@@ -86,7 +86,6 @@ export const groupContactInformationWithContactSchema = contactInformationBaseSc
 
 export const userSchema = z.object({
   email: z.string().email('Invalid email format'),
-  password: z.string().min(8, 'Password must be at least 8 characters'),
   isSystemAdmin: z.boolean().optional()
 });
 
@@ -163,22 +162,15 @@ export const updateGroupInviteSchema = groupInviteSchema.partial().extend({
   acceptedAt: z.string().datetime('Invalid date format for acceptedAt').optional().nullable()
 });
 
-export const loginSchema = z.object({
-  email: z.string().email('Invalid email format'),
-  password: z.string().min(1, 'Password is required')
+export const sendMagicLinkSchema = z.object({
+  email: z.string().email('Invalid email format')
 });
 
 export const resendVerificationSchema = z.object({
   email: z.string().email('Invalid email format')
 });
 
-export const changePasswordSchema = z.object({
-  currentPassword: z.string().min(1, 'Current password is required'),
-  newPassword: z.string().min(8, 'New password must be at least 8 characters')
-});
-
 export const changeEmailSchema = z.object({
-  currentPassword: z.string().min(1, 'Current password is required'),
   newEmail: z.string().email('Invalid email format')
 });
 

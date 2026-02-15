@@ -82,7 +82,7 @@ server.use(session({
   cookie: {
     secure: process.env.NODE_ENV === 'production',
     httpOnly: true,
-    maxAge: 60 * 24 * 60 * 60 * 1000, // 60 days
+    maxAge: 365 * 24 * 60 * 60 * 1000, // 1 year
     sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax'
   }
 }));

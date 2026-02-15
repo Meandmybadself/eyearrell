@@ -98,6 +98,56 @@ export const sendVerificationEmail = async (email: string, token: string, type: 
   return result
 }
 
+export const buildMagicLinkUrl = (token: string) => {
+  const url = new URL('/login', resolveVerificationBaseUrl())
+  url.searchParams.set('token', token)
+  return url.toString()
+}
+
+export const sendMagicLinkEmail = async (email: string, token: string) => {
+  const transport = getTransporter()
+  const fromAddress = resolveFromAddress()
+
+  if (!transport || !fromAddress) {
+    if (process.env.NODE_ENV !== 'test') {
+      console.warn('AWS SES SMTP not configured - skipping magic link email dispatch.')
+    }
+    return
+  }
+
+  const magicLinkUrl = buildMagicLinkUrl(token)
+  const fromName = resolveFromName()
+  const from = fromName ? `${fromName} <${fromAddress}>` : fromAddress
+
+  const subject = 'Your sign-in link'
+  const message = 'Click the link below to sign in to your account. This link will expire in 15 minutes.'
+
+  const textContent = [
+    'Hi there!',
+    message,
+    `Sign in link: ${magicLinkUrl}`,
+    'If you did not request this, you can safely ignore this email.'
+  ].join('\n\n')
+
+  const htmlContent = `
+    <p>Hi there!</p>
+    <p>${message}</p>
+    <p><a href="${magicLinkUrl}">Sign in to your account</a></p>
+    <p style="color: #666; font-size: 14px;">Or copy and paste this link: ${magicLinkUrl}</p>
+    <p style="color: #999; font-size: 12px;">If you did not request this, you can safely ignore this email.</p>
+  `
+
+  const result = await transport.sendMail({
+    from,
+    to: email,
+    subject,
+    text: textContent,
+    html: htmlContent
+  })
+
+  return result
+}
+
 export const buildInvitationLink = (email: string) => {
   const url = new URL('/register', resolveVerificationBaseUrl())
   url.searchParams.set('email', email)
