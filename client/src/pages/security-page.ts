@@ -11,8 +11,8 @@ import type { User } from '@irl/shared';
 import '../components/ui/input.js';
 import '../components/ui/button.js';
 
-@customElement('profile-page')
-export class ProfilePage extends LitElement {
+@customElement('security-page')
+export class SecurityPage extends LitElement {
   createRenderRoot() {
     return this;
   }
@@ -232,7 +232,7 @@ export class ProfilePage extends LitElement {
       <div class="${pageStyles.container}">
         <div class="${pageStyles.content}">
         <div class="mb-8">
-          <h1 class="text-3xl font-bold text-gray-900 dark:text-white">Profile Settings</h1>
+          <h1 class="text-3xl font-bold text-gray-900 dark:text-white">Security Settings</h1>
           <p class="mt-2 text-sm text-gray-600 dark:text-gray-400">
             Manage your account settings and preferences
           </p>
@@ -394,6 +394,6 @@ export class ProfilePage extends LitElement {
 
 declare global {
   interface HTMLElementTagNameMap {
-    'profile-page': ProfilePage;
+    'security-page': SecurityPage;
   }
 }

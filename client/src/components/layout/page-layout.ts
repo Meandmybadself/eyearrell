@@ -30,7 +30,7 @@ import '../ui/ui-spinner.js';
  * </page-layout>`
  *
  * // Narrow content width
- * html`<page-layout title="Profile Settings" narrow>
+ * html`<page-layout title="Security Settings" narrow>
  *   <profile-form></profile-form>
  * </page-layout>`
  */

@@ -228,7 +228,7 @@ irl-mobile/
 | `login-page.ts` | User login form |
 | `register-page.ts` | User registration |
 | `verify-email-page.ts` | Email verification |
-| `profile-page.ts` | User account management |
+| `security-page.ts` | Security settings |
 | `home-page.ts` | Dashboard with stats |
 | `persons-page.ts` | Person directory |
 | `person-detail-page.ts` | Person profile view |

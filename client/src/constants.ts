@@ -7,17 +7,28 @@ export const SEARCH_DEBOUNCE_MS = 300;
 
 // Routes
 export const ROUTES = {
-  HOME: '/home',
-  LOGIN: '/login',
-  PROFILE: '/profile',
-  PERSONS: '/persons',
-  PERSONS_CREATE: '/persons/create',
-  GROUPS: '/groups',
-  GROUPS_CREATE: '/groups/create',
-  INVITE: '/invite',
+  ACHIEVEMENTS: '/achievements',
+  ADMIN_INTERESTS: '/admin/interests',
+  ADMIN_LOGS: '/admin/logs',
   ADMIN_SYSTEM: '/admin/system',
   ADMIN_USERS: '/admin/users',
-  ACHIEVEMENTS: '/achievements',
+  GROUPS_CREATE: '/groups/create',
+  GROUPS_DETAIL: '/groups/:id',
+  GROUPS_EDIT: '/groups/:id/edit',
+  GROUPS: '/groups',
+  HOME: '/home',
+  INVITE: '/invite',
+  LOGIN: '/login',
+  NOT_FOUND: '/*',
+  ONBOARDING: '/onboarding',
+  PERSONS_CREATE: '/persons/create',
+  PERSONS_DETAIL: '/persons/:id',
+  PERSONS_EDIT: '/persons/:id/edit',
+  PERSONS: '/persons',
+  REGISTER: '/register',
+  SECURITY: '/security',
+  VERIFY_EMAIL_CHANGE: '/verify-email-change',
+  VERIFY_EMAIL: '/verify-email',
 } as const;
 
 // Error messages

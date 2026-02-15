@@ -70,7 +70,7 @@ export class InviteUserCard extends LitElement {
       <div class="${backgroundColors.content} rounded-lg shadow-sm p-4">
         <h3 class="${textColors.primary} text-lg font-semibold mb-3">Invite Someone</h3>
         <p class="${textColors.secondary} text-sm mb-4">
-          Invite a friend or colleague to join the community.
+          Are we missing someone? Send them an invitation to join the community.
         </p>
         <form @submit=${this.handleSubmit} class="space-y-3">
           <div>

@@ -1,4 +1,5 @@
 import { html, type TemplateResult } from 'lit';
+import { ROUTES } from './constants.js';
 import type { AppStore } from './store/index.js';
 import { selectIsAuthenticated, selectNeedsPersonOnboarding } from './store/selectors.js';
 import { setAttemptedPath } from './store/slices/auth.js';
@@ -8,7 +9,7 @@ import './pages/register-page.js';
 import './pages/login-page.js';
 import './pages/verify-email-page.js';
 import './pages/verify-email-change-page.js';
-import './pages/profile-page.js';
+import './pages/security-page.js';
 import './pages/home-page.js';
 import './pages/system-admin-page.js';
 import './pages/audit-logs-page.js';
@@ -63,7 +64,7 @@ export const createRoutes = (store: AppStore): RouteConfig[] => {
       }
     },
     {
-      path: '/register',
+      path: ROUTES.REGISTER,
       render: () => {
         const state = store.getState();
         const isAuthenticated = selectIsAuthenticated(state);
@@ -75,7 +76,7 @@ export const createRoutes = (store: AppStore): RouteConfig[] => {
       }
     },
     {
-      path: '/login',
+      path: ROUTES.LOGIN,
       render: () => {
         const state = store.getState();
         const isAuthenticated = selectIsAuthenticated(state);
@@ -87,19 +88,19 @@ export const createRoutes = (store: AppStore): RouteConfig[] => {
       }
     },
     {
-      path: '/verify-email',
+      path: ROUTES.VERIFY_EMAIL,
       render: () => {
         return html`<verify-email-page></verify-email-page>`;
       }
     },
     {
-      path: '/verify-email-change',
+      path: ROUTES.VERIFY_EMAIL_CHANGE,
       render: () => {
         return html`<verify-email-change-page></verify-email-change-page>`;
       }
     },
     {
-      path: '/onboarding',
+      path: ROUTES.ONBOARDING,
       render: () => {
         const state = store.getState();
         const isAuthenticated = selectIsAuthenticated(state);
@@ -112,25 +113,25 @@ export const createRoutes = (store: AppStore): RouteConfig[] => {
       }
     },
     {
-      path: '/profile',
+      path: ROUTES.SECURITY,
       render: () => {
         const state = store.getState();
         const isAuthenticated = selectIsAuthenticated(state);
 
         if (!isAuthenticated) {
-          store.dispatch(setAttemptedPath('/profile'));
+          store.dispatch(setAttemptedPath('/security'));
           return html`<login-page></login-page>`;
         }
 
         // Check if user needs to complete onboarding
-        const onboarding = checkOnboarding(store, '/profile');
+        const onboarding = checkOnboarding(store, '/security');
         if (onboarding) return onboarding;
 
-        return html`<profile-page></profile-page>`;
+        return html`<security-page></security-page>`;
       }
     },
     {
-      path: '/home',
+      path: ROUTES.HOME,
       render: () => {
         const state = store.getState();
         const isAuthenticated = selectIsAuthenticated(state);
@@ -149,7 +150,7 @@ export const createRoutes = (store: AppStore): RouteConfig[] => {
       }
     },
     {
-      path: '/admin/system',
+      path: ROUTES.ADMIN_SYSTEM,
       render: () => {
         const state = store.getState();
         const isAuthenticated = selectIsAuthenticated(state);
@@ -167,7 +168,7 @@ export const createRoutes = (store: AppStore): RouteConfig[] => {
       }
     },
     {
-      path: '/admin/logs',
+      path: ROUTES.ADMIN_LOGS,
       render: () => {
         const state = store.getState();
         const isAuthenticated = selectIsAuthenticated(state);
@@ -185,7 +186,7 @@ export const createRoutes = (store: AppStore): RouteConfig[] => {
       }
     },
     {
-      path: '/admin/users',
+      path: ROUTES.ADMIN_USERS,
       render: () => {
         const state = store.getState();
         const isAuthenticated = selectIsAuthenticated(state);
@@ -203,7 +204,7 @@ export const createRoutes = (store: AppStore): RouteConfig[] => {
       }
     },
     {
-      path: '/admin/interests',
+      path: ROUTES.ADMIN_INTERESTS,
       render: () => {
         const state = store.getState();
         const isAuthenticated = selectIsAuthenticated(state);
@@ -324,7 +325,7 @@ export const createRoutes = (store: AppStore): RouteConfig[] => {
       }
     },
     {
-      path: '/groups/create',
+      path: ROUTES.GROUPS_CREATE,
       render: () => {
         const state = store.getState();
         const isAuthenticated = selectIsAuthenticated(state);
@@ -342,7 +343,7 @@ export const createRoutes = (store: AppStore): RouteConfig[] => {
       }
     },
     {
-      path: '/groups/:id/edit',
+      path: ROUTES.GROUPS_EDIT,
       render: () => {
         const state = store.getState();
         const isAuthenticated = selectIsAuthenticated(state);
@@ -360,7 +361,7 @@ export const createRoutes = (store: AppStore): RouteConfig[] => {
       }
     },
     {
-      path: '/groups/:id',
+      path: ROUTES.GROUPS_DETAIL,
       render: () => {
         const state = store.getState();
         const isAuthenticated = selectIsAuthenticated(state);
@@ -378,7 +379,7 @@ export const createRoutes = (store: AppStore): RouteConfig[] => {
       }
     },
     {
-      path: '/invite',
+      path: ROUTES.INVITE,
       render: () => {
         const state = store.getState();
         const isAuthenticated = selectIsAuthenticated(state);
@@ -396,7 +397,7 @@ export const createRoutes = (store: AppStore): RouteConfig[] => {
       }
     },
     {
-      path: '/achievements',
+      path: ROUTES.ACHIEVEMENTS,
       render: () => {
         const state = store.getState();
         const isAuthenticated = selectIsAuthenticated(state);
@@ -414,7 +415,7 @@ export const createRoutes = (store: AppStore): RouteConfig[] => {
       }
     },
     {
-      path: '/*',
+      path: ROUTES.NOT_FOUND,
       render: () => {
         return html`
           <div style="padding: 2rem; text-align: center;">
